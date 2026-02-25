@@ -11,50 +11,30 @@ const workSans = Work_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://aingavao.com"), // remplace par ton vrai domaine
+  metadataBase: new URL("https://example.com"), // ← À MODIFIER avec ton vrai domaine
 
   title: {
-    default: "Ainga Vao - Plateforme de livreurs freelances rapide et sécurisée",
-    template: "%s | Ainga Vao",
+    default: "e-kalité web",
+    template: "%s | e-kalité web",
   },
 
   description:
-    "Ainga Vao est une plateforme de livreurs freelances rapide, simple et sécurisée. Trouvez un livreur en quelques minutes ou commencez à livrer dès aujourd’hui.",
+    "e-kalité web – votre plateforme / service / solution …", // ← À personnaliser
 
-  keywords: [
-    "Ainga Vao",
-    "livreur freelance",
-    "plateforme livraison",
-    "livraison rapide",
-    "livraison sécurisée",
-    "livreur indépendant",
-    "service livraison Madagascar",
-  ],
-
-  authors: [{ name: "Ainga Vao" }],
-  creator: "Ainga Vao",
-  publisher: "Ainga Vao",
-
-  robots: {
-    index: true,
-    follow: true,
-  },
 
   openGraph: {
-    title: "Ainga Vao - Plateforme de livreurs freelances",
-    description:
-      "Livraison rapide, simple et sécurisée avec des livreurs freelances vérifiés.",
-    url: "https://aingavao.com",
-    siteName: "Ainga Vao",
+    title: "e-kalité web",
+    description: "…", // ← À personnaliser
+    url: "https://example.com",           // ← À modifier
+    siteName: "e-kalité web",
     locale: "fr_FR",
     type: "website",
   },
 
   twitter: {
     card: "summary_large_image",
-    title: "Ainga Vao - Livraison freelance rapide",
-    description:
-      "Trouvez un livreur freelance fiable en quelques minutes.",
+    title: "e-kalité web",
+    description: "…", // ← À personnaliser
   },
 };
 
@@ -66,18 +46,18 @@ export default function RootLayout({
   return (
     <html
       lang="fr"
-      className={`${workSans.variable} scroll-smooth light`} 
+      className={`${workSans.variable} scroll-smooth light`}
       suppressHydrationWarning
     >
       <head>
-        <link
-          rel="icon"
-          href="/favicon.ico"
-        />
+        {/* Changement du favicon */}
+        <link rel="icon" href="/logos/logo.ico" />
+
         <link
           rel="canonical"
-          href="https://aingavao.com"
+          href="https://example.com" // ← À modifier avec ton vrai domaine
         />
+
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"

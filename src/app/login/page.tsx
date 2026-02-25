@@ -1,11 +1,8 @@
 import { LogoDeliverFlow } from '@/components/homecomponents/auth/LogoDeliverFlow';
 import { LoginForm } from '@/components/homecomponents/auth/LoginForm';
-
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-slate-custom p-4 font-display dark:bg-background-dark">
-      <LogoDeliverFlow />
-
       <div className="mt-8 w-full max-w-md">
         <LoginForm />
       </div>

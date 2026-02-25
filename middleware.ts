@@ -1,36 +1,74 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+// middleware.ts   (ou src/middleware.ts)
+import { NextRequest, NextResponse } from 'next/server';
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const pathname = req.nextUrl.pathname;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-    if (pathname.startsWith("/manager") && token?.roleId !== 2) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+const protectedPaths = [
+  '/dashboard',
+  '/profile',
+  '/settings',
+  // ajoute toutes tes routes protégées (pas besoin de regex ici sauf si complexe)
+];
 
-    if (pathname.startsWith("/dashboard") && token?.roleId !== 3) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-    if (pathname.startsWith("/member") && (token?.roleId ?? 0) < 1) {
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => {
-        return !!token;
-      },
-    },
+  // 1. On ne protège que certaines routes
+  const isProtectedRoute = protectedPaths.some((path) =>
+    pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  if (!isProtectedRoute) {
+    return NextResponse.next();
   }
-);
+
+  // 2. Récupère le cookie de session (connect.sid par défaut avec express-session)
+  const sessionCookie = request.cookies.get('connect.sid')?.value;
+
+  if (!sessionCookie) {
+    // Pas de cookie → redirection login
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname); // optionnel : pour rediriger après login
+    return NextResponse.redirect(loginUrl);
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/auth/session`, {
+      method: 'GET',
+      headers: {
+        Cookie: `connect.sid=${sessionCookie}`, // on forward le cookie exact
+      },
+      credentials: 'include', // important
+    });
+
+    if (!response.ok) {
+      throw new Error('Session invalide');
+    }
+
+    const data = await response.json();
+
+    if (!data.authenticated) {
+      throw new Error('Non authentifié');
+    }
+
+    const responseWithUser = NextResponse.next();
+    responseWithUser.headers.set('x-user', JSON.stringify(data.user || {}));
+
+    return responseWithUser;
+
+  } catch (error) {
+    console.error('Middleware auth error:', error);
+
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+}
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/manager/:path*",
-    "/member/:path*",
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/settings/:path*',
   ],
 };
