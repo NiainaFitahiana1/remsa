@@ -1,12 +1,52 @@
-export type Song = { id: number; title: string; dateUpload: string };
-export type Reading = { id: number; book: string; chapter: string; verses: string };
-export type Month = { name: string; theme: string; bgColor: string; textColor: string };
-export type Day = {
+export type Role = "ADMIN" | "CLIENT";
+
+export interface User {
   id: number;
-  date: string;
-  dayName: string;
-  title?: string;
-  songs: Song[];
-  readings: Reading[];
-  month: Month;
+  nom: string;
+  prenom: string;
+  role: Role;
+}
+
+export type FormErrors = {
+  email?: string;
+  password?: string;
+};
+
+export type InputState = 'default' | 'error' | 'success';
+
+export type RegisterFormData = {
+  nom: string;
+  prenom: string;
+  identifiant: string;
+  email: string;
+  telephone: string;
+  password: string;
+  genre?: 'HOMME' | 'FEMME' | 'AUTRE';
+  roleId: 1 | 2;
+  vehicleType?: 'MOTO' | 'VELO' | 'VOITURE';
+  zone?: string;
+};
+
+export type ApiError = {
+  message: string;
+  status?: number;
+};
+
+export type RegisterData = {
+  nom: string;
+  prenom: string;
+  identifiant: string;
+  telephone: string;
+  email?: string;
+  password: string;
+  genre?: 'HOMME' | 'FEMME' | 'AUTRE';
+  roleId: 1 | 2;
+  vehicleType?: 'MOTO' | 'VELO' | 'VOITURE';
+  zone?: string;
+};
+
+export type UseRegisterReturn = {
+  register: (data: RegisterData) => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
 };

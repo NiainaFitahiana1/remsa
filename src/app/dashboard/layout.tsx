@@ -1,15 +1,21 @@
-"use client"; 
+"use client";
 
 import MobileAppBar from "@/components/dashcomponents/MobileAppBar";
 import MobileBottomNav from "@/components/dashcomponents/MobileBottomNav";
 import Breadcrumb from "@/components/dashcomponents/BreadCrumb";
 import { Bell } from "lucide-react";
-import { useState, type ReactNode } from "react";  // ← type ReactNode (mieux que ReactNode sans type)
-
+import {  useState, type ReactNode } from "react";
 import Sidebar from "@/components/dashcomponents/Sidebar";
+
+type User = {
+  email: string;
+  role: string;
+};
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
+
+
 
   return (
     <div className="min-h-screen bg-background-light font-sans text-bleu-fonce antialiased">
@@ -18,7 +24,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="flex flex-col min-h-screen lg:pl-64">
         <MobileAppBar />
 
-        {/* Bouton cloche flottant – uniquement lg+ */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
           className={`
@@ -32,23 +37,24 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           aria-label="Notifications"
         >
           <Bell className="h-4 w-4" />
-          {/* Badge exemple si tu veux : */}
-           <span className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ring-2 ring-white">3</span> 
+          <span className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ring-2 ring-white">
+            3
+          </span>
         </button>
 
         <main className="flex-1 pb-10 lg:pb-6">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-5 bg-transparent sticky top-0 z-10">
             <Breadcrumb />
           </div>
+
           {children}
         </main>
 
         <MobileBottomNav />
       </div>
 
-      {/* Panneau notifications (placeholder – à remplacer) */}
       {showNotifications && (
-        <div 
+        <div
           className="
             fixed top-16 right-6 z-50 
             w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200/60

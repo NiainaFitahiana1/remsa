@@ -1,13 +1,16 @@
 import { useState, forwardRef, InputHTMLAttributes } from 'react';
-import { Icon } from '@/components/homecomponents/ui/Icon'; // suppose que tu as ce composant
+import { Icon } from '@/components/homecomponents/ui/Icon';
 
 interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
+  value?: string | undefined;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ label, ...props }, ref) => {
+  ({ label, value: externalValue, onChange, ...props }, ref) => {
     const [showPassword, setShowPassword] = useState(false);
+    const safeValue = externalValue ?? '';
 
     return (
       <div>
@@ -27,7 +30,9 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
               dark:border-zinc-700 dark:bg-zinc-800 dark:text-slate-100
               pr-11
             "
-            {...props}
+            value={safeValue}         
+            onChange={onChange}       
+            {...props}               
           />
           <button
             type="button"

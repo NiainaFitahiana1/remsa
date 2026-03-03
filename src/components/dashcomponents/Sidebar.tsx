@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLogout } from '@/hooks/useLogout';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const {logout,loading} = useLogout();
+
 
   // Fonction qui vérifie si le lien est actif (match exact)
   const isActive = (href: string) => {
@@ -86,9 +89,14 @@ export default function Sidebar() {
       </nav>
 
       <div className="p-5 border-t border-border mt-auto">
-        <button className="flex items-center gap-2 text-destructive hover:text-destructive/80 font-medium transition w-full">
+        <button 
+          onClick={logout}
+          disabled={loading}
+          className="flex items-center gap-2 text-destructive hover:text-destructive/80 font-medium transition w-full"
+        >
           <span className="material-symbols-outlined">logout</span>
-          Logout
+          {/* Logout */}
+            {loading ? "Déconnexion..." : "Se déconnecter"}
         </button>
       </div>
     </aside>

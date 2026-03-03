@@ -1,14 +1,33 @@
+"use client";
+
 import Greeting from "@/components/dashcomponents/Greeting";
 import StatsCard from "@/components/dashcomponents/StatsCard";
 import UrgentRequestCard from "@/components/dashcomponents/UrgentRequestCard";
 import PremiumGuide from "@/components/dashcomponents/PremiumGuide";
 import PlatformUpdateItem from "@/components/dashcomponents/PlatformUpdateItem";
 
+import { useUser } from '@/hooks/useUser';
+
 export default function DashboardPage() {
+  const { user, loading, error } = useUser();
+
+  if (loading) return (
+    <div className="flex justify-center items-center h-screen">
+      <span className="text-gray-500">Chargement...</span>
+    </div>
+  );
+
+  if (error) return (
+    <div className="flex justify-center items-center h-screen text-red-500">
+      Erreur : {error instanceof Error ? error.message : String(error)}
+    </div>
+  );
+
+
   return (
     <>
       <div className="p-4 lg:p-6">
-        <Greeting name="Alex" />
+        {user ? <Greeting name={user?.nom || user?.email} /> : <span>Utilisateur non trouvé</span>}
       </div>
 
       {/* Statistiques */}

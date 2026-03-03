@@ -1,74 +1,43 @@
-// middleware.ts   (ou src/middleware.ts)
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const PUBLIC_ROUTES = ["/login","/register","/"];
 
-const protectedPaths = [
-  '/dashboard',
-  '/profile',
-  '/settings',
-  // ajoute toutes tes routes protégées (pas besoin de regex ici sauf si complexe)
-];
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // 1. On ne protège que certaines routes
-  const isProtectedRoute = protectedPaths.some((path) =>
-    pathname === path || pathname.startsWith(`${path}/`)
-  );
-
-  if (!isProtectedRoute) {
+  if (PUBLIC_ROUTES.includes(pathname)) {
     return NextResponse.next();
   }
 
-  // 2. Récupère le cookie de session (connect.sid par défaut avec express-session)
-  const sessionCookie = request.cookies.get('connect.sid')?.value;
+  const token = req.cookies.get("access_token")?.value;
 
-  if (!sessionCookie) {
-    // Pas de cookie → redirection login
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname); // optionnel : pour rediriger après login
-    return NextResponse.redirect(loginUrl);
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   try {
-    const response = await fetch(`${API_URL}/auth/session`, {
-      method: 'GET',
-      headers: {
-        Cookie: `connect.sid=${sessionCookie}`, // on forward le cookie exact
-      },
-      credentials: 'include', // important
-    });
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
 
-    if (!response.ok) {
-      throw new Error('Session invalide');
+    const role = payload.role as string;
+
+    if (pathname.startsWith("/admin") && role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    const data = await response.json();
-
-    if (!data.authenticated) {
-      throw new Error('Non authentifié');
+    if (pathname.startsWith("/client") && role !== "CLIENT") {
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
-    const responseWithUser = NextResponse.next();
-    responseWithUser.headers.set('x-user', JSON.stringify(data.user || {}));
-
-    return responseWithUser;
+    return NextResponse.next();
 
   } catch (error) {
-    console.error('Middleware auth error:', error);
-
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 }
 
 export const config = {
-  matcher: [
-    '/dashboard/:path*',
-    '/profile/:path*',
-    '/settings/:path*',
-  ],
+  matcher: ["/dashboard/:path*", "/admin/:path*", "/client/:path*"],
 };

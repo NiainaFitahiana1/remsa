@@ -20,48 +20,84 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#e73645',
-          foreground: '#ffffff',
+          DEFAULT: '#e9590c',       // ton orange terracotta signature
+          foreground: '#ffffff',     // texte sur primary → blanc pur
+          50:  '#fef5f0',
+          100: '#fee8d9',
+          200: '#fcd0b3',
+          300: '#f9b38c',
+          400: '#f69666',
+          500: '#e9590c',
+          600: '#d14e0b',
+          700: '#b03f09',
+          800: '#8f3207',
+          900: '#752906',
         },
+
         secondary: {
-          DEFAULT: '#1D3557',
-          foreground: '#ffffff',
+          DEFAULT: '#1e293b',        // slate-900 / bleu nuit profond (complémentaire élégant)
+          foreground: '#f1f5f9',     // texte clair sur fond sombre
         },
+
         accent: {
-          DEFAULT: '#F4D35E',
-          foreground: '#1D3557',
+          DEFAULT: '#d4a373',        // doré-bronze chaud, très cosy avec l’orange
+          foreground: '#1e293b',     // texte sombre dessus
         },
+
         background: {
-			DEFAULT: '#F8FAFC',  
-			dark: '#211112',
-		},
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
-        foreground: 'hsl(var(--foreground))',
-        muted: 'hsl(var(--muted))',
-        'muted-foreground': 'hsl(var(--muted-foreground))',
+          DEFAULT: '#f8f6f5',        // light – ton beige très clair chaud
+          dark:  '#221610',          // dark – ton marron presque noir chaleureux
+        },
+
+        // Pour les borders, inputs, etc. (variables CSS souvent utilisées par shadcn)
+        border: 'hsl(20 14% 90%)',          // light mode → beige clair
+        input: 'hsl(20 14% 90%)',
+        ring: '#e9590c',                    // focus ring = primary
+
+        foreground: {
+          DEFAULT: '#1f1a17',         // texte principal light mode (proche noir chaud)
+          dark:   '#f5f0ed',          // texte principal dark mode (proche blanc cassé)
+        },
+
+        muted: {
+          DEFAULT: '#e2dedb',
+          foreground: '#6b5e57',
+        },
+        'muted-foreground': '#8d7c72',
+
         destructive: {
-          DEFAULT: '#e73645',
+          DEFAULT: '#e9590c',         // rouge sombre (danger) – reste dans la vibe warm
           foreground: '#ffffff',
         },
-        popover: 'hsl(var(--popover))',
-        'popover-foreground': 'hsl(var(--popover-foreground))',
-        card: 'hsl(var(--card))',
-        'card-foreground': 'hsl(var(--card-foreground))',
+
+        popover: {
+          DEFAULT: 'hsl(0 0% 100%)',  // light
+          dark:  '#2a1e18',
+        },
+        'popover-foreground': 'hsl(20 14% 4%)',
+
+        card: {
+          DEFAULT: 'hsl(0 0% 100%)',
+          dark:  '#2a1e18',
+        },
+        'card-foreground': 'hsl(20 14% 4%)',
       },
+
       borderRadius: {
-        DEFAULT: '2px',
-        sm: '2px',
-        md: '3px',
-        lg: '3px',
-        xl: '4px',
-        full: '9999px',
+        DEFAULT: '3px',
+        sm:    '3px',
+        md:    '3px',
+        lg:    '3px',
+        xl:    '3px',
+        '2xl': '6px',
+        full:  '9999px',
       },
+
       fontFamily: {
-        display: ['Work Sans', 'system-ui', 'sans-serif'],
-        sans: ['Work Sans', 'system-ui', 'sans-serif'],
+        display: ["Rubik", "sans-serif"],
+        sans:    ["Inter", "sans-serif"],    // ou body si tu préfères garder le nom
       },
+
       keyframes: {
         'accordion-down': {
           from: { height: '0' },
@@ -80,4 +116,4 @@ module.exports = {
   },
 
   plugins: [require("tailwindcss-animate")],
-};
+}
