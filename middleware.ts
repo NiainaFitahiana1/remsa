@@ -1,43 +1,39 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { jwtVerify } from "jose";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const PUBLIC_ROUTES = ["/login","/register","/"];
+const publicPaths = ['/login', '/register', '/forgot-password', '/api'];
 
-export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.next();
-  }
-
-  const token = req.cookies.get("access_token")?.value;
-
-  if (!token) {
-    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const { payload } = await jwtVerify(token, secret);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+      headers: request.headers,           
+      credentials: 'include',
+    });
 
-    const role = payload.role as string;
-
-    if (pathname.startsWith("/admin") && role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+    if (!res.ok) {
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('from', pathname);
+      return NextResponse.redirect(loginUrl);
     }
 
-    if (pathname.startsWith("/client") && role !== "CLIENT") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
-    }
-
+    // Optionnel : on peut mettre en cache le résultat dans les headers
+    // ou dans un cookie non-httpOnly (moins sécurisé mais plus rapide)
     return NextResponse.next();
-
-  } catch (error) {
-    return NextResponse.redirect(new URL("/login", req.url));
+  } catch (err) {
+    console.error("Middleware auth error", err);
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/client/:path*"],
+  matcher: [
+    
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 };

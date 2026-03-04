@@ -5,29 +5,20 @@ import StatsCard from "@/components/dashcomponents/StatsCard";
 import UrgentRequestCard from "@/components/dashcomponents/UrgentRequestCard";
 import PremiumGuide from "@/components/dashcomponents/PremiumGuide";
 import PlatformUpdateItem from "@/components/dashcomponents/PlatformUpdateItem";
-
-import { useUser } from '@/hooks/useUser';
+import { useCurrentUser } from "@/lib/auth/use-current-user";
 
 export default function DashboardPage() {
-  const { user, loading, error } = useUser();
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-screen">
-      <span className="text-gray-500">Chargement...</span>
-    </div>
-  );
+ const { user, loading, error } = useCurrentUser();
 
-  if (error) return (
-    <div className="flex justify-center items-center h-screen text-red-500">
-      Erreur : {error instanceof Error ? error.message : String(error)}
-    </div>
-  );
+  if (loading) return <div>Chargement...</div>;
+  if (error || !user) return <div>Vous devez être connecté</div>;
 
 
   return (
     <>
       <div className="p-4 lg:p-6">
-        {user ? <Greeting name={user?.nom || user?.email} /> : <span>Utilisateur non trouvé</span>}
+        {user ? <Greeting name={user?.nom} /> : <span>Utilisateur non trouvé</span>}
       </div>
 
       {/* Statistiques */}
