@@ -18,7 +18,7 @@ export default function DashboardPage() {
   return (
     <>
       <div className="p-4 lg:p-6">
-        {user ? <Greeting name={user?.nom} /> : <span>Utilisateur non trouvé</span>}
+        {user ? <Greeting name={user?.role} /> : <span>Utilisateur non trouvé</span>}
       </div>
 
       {/* Statistiques */}

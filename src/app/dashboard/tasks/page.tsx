@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, DragEvent } from "react";
+import { useState, DragEvent, useRef } from "react";
 
 type TaskStatus = "todo" | "in-progress" | "done";
 
@@ -75,6 +75,67 @@ const initialTasks: Record<TaskStatus, Task[]> = {
 export default function TasksKanban() {
   const [tasks, setTasks] = useState(initialTasks);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+
+  const modalRef = useRef<HTMLDialogElement>(null);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    pickupAddress: "",
+    dropAddress: "",
+    priority: "medium" as const,
+    distanceKm: "",
+    price: "",
+    scheduledAt: "",
+  });
+
+  const openModal = () => modalRef.current?.showModal();
+  const closeModal = () => modalRef.current?.close();
+
+  const handleFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title || !formData.pickupAddress || !formData.dropAddress || !formData.price) {
+      alert("Veuillez remplir les champs obligatoires");
+      return;
+    }
+
+    const newTask: Task = {
+      id: `local-${Date.now()}`,
+      title: formData.title,
+      description: `${formData.pickupAddress} → ${formData.dropAddress}`,
+      priority: formData.priority,
+      distance: formData.distanceKm ? `${formData.distanceKm} km` : undefined,
+      pickupTime: formData.scheduledAt
+        ? new Date(formData.scheduledAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
+        : "Dès que possible",
+      price: parseFloat(formData.price) || 0,
+    };
+
+    setTasks((prev) => ({
+      ...prev,
+      todo: [...prev.todo, newTask],
+    }));
+
+    setFormData({
+      title: "",
+      description: "",
+      pickupAddress: "",
+      dropAddress: "",
+      priority: "medium",
+      distanceKm: "",
+      price: "",
+      scheduledAt: "",
+    });
+    closeModal();
+  };
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>, task: Task) => {
     setDraggedTask(task);
@@ -201,16 +262,156 @@ export default function TasksKanban() {
   );
 
   return (
-    <div className="min-h-screen bg-white text-secondary pb-12">
+    <div className="min-h-screen text-secondary pb-12">
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold text-primary tracking-tight">
-            Tasks – Kanban
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Drag & drop deliveries between columns
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl lg:text-4xl font-bold text-primary tracking-tight">
+              Tasks – Kanban
+            </h1>
+            <p className="mt-2 text-gray-600">
+              Drag & drop deliveries between columns
+            </p>
+          </div>
+
+          <button
+            onClick={openModal}
+            className="btn btn-primary text-white"
+          >
+            + Nouvelle livraison
+          </button>
         </div>
+
+        <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
+          <div className="modal-box max-w-2xl">
+            <h3 className="font-bold text-xl mb-4">Créer une nouvelle livraison</h3>
+
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Titre / Désignation</span>
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleFormChange}
+                  placeholder="ex: Livraison documents urgents"
+                  className="input input-bordered w-full"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Adresse de ramassage</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="pickupAddress"
+                    value={formData.pickupAddress}
+                    onChange={handleFormChange}
+                    placeholder="123 Rue Principale, Ville"
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Adresse de livraison</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="dropAddress"
+                    value={formData.dropAddress}
+                    onChange={handleFormChange}
+                    placeholder="456 Avenue Centrale, Ville"
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Distance (km)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="distanceKm"
+                    value={formData.distanceKm}
+                    onChange={handleFormChange}
+                    placeholder="ex: 4.5"
+                    className="input input-bordered w-full"
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Prix (€)</span>
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleFormChange}
+                    placeholder="ex: 24.50"
+                    className="input input-bordered w-full"
+                    required
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Priorité</span>
+                  </label>
+                  <select
+                    name="priority"
+                    value={formData.priority}
+                    onChange={handleFormChange}
+                    className="select select-bordered w-full"
+                  >
+                    <option value="low">Basse</option>
+                    <option value="medium">Moyenne</option>
+                    <option value="high">Haute</option>
+                    <option value="urgent">Urgente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Date / heure prévue (optionnel)</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  name="scheduledAt"
+                  value={formData.scheduledAt}
+                  onChange={handleFormChange}
+                  className="input input-bordered w-full"
+                />
+              </div>
+
+              <div className="modal-action mt-6">
+                <button type="button" className="btn btn-outline" onClick={closeModal}>
+                  Annuler
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Créer la livraison
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <form method="dialog" className="modal-backdrop">
+            <button>close</button>
+          </form>
+        </dialog>
 
         <div className="flex flex-col md:flex-row gap-6 overflow-x-auto pb-4">
           <Column title="To Do"       status="todo"        icon="assignment" />
