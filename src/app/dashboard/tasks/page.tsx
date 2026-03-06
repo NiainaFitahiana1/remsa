@@ -1,422 +1,399 @@
 "use client";
 
-import { useState, DragEvent, useRef } from "react";
+import { useState, DragEvent, useRef, useEffect } from "react";
 
-type TaskStatus = "todo" | "in-progress" | "done";
+type DeliveryStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "PICKED_UP"
+  | "IN_PROGRESS"
+  | "DELIVERED"
+  | "CANCELLED";
 
-interface Task {
-  id: string;
-  title: string;
-  description?: string;
-  priority: "low" | "medium" | "high" | "urgent";
-  distance?: string;
-  pickupTime?: string;
+interface Delivery {
+  id: number;
+  pickupAddress: string;
+  dropAddress: string;
+  distanceKm?: number | null;
   price: number;
+  status: DeliveryStatus;
+  scheduledAt?: string | null;
+  client?: { nom: string; prenom: string };
 }
 
-const initialTasks: Record<TaskStatus, Task[]> = {
-  todo: [
-    {
-      id: "t1",
-      title: "Downtown Express Delivery",
-      description: "Package from Central Station to Office Tower",
-      priority: "urgent",
-      distance: "2.4 km",
-      pickupTime: "Now",
-      price: 28.5,
-    },
-    {
-      id: "t2",
-      title: "Medical Supplies – Hospital Rush",
-      priority: "high",
-      distance: "1.8 km",
-      pickupTime: "15 min",
-      price: 35.0,
-    },
-    {
-      id: "t3",
-      title: "Birthday Cake Delivery",
-      priority: "medium",
-      distance: "4.1 km",
-      pickupTime: "30 min",
-      price: 22.75,
-    },
-  ],
-  "in-progress": [
-    {
-      id: "t4",
-      title: "Legal Documents – Financial District",
-      priority: "high",
-      distance: "3.7 km",
-      pickupTime: "In progress",
-      price: 42.0,
-    },
-  ],
-  done: [
-    {
-      id: "t5",
-      title: "Coffee Order – Office Rush",
-      priority: "medium",
-      distance: "1.2 km",
-      pickupTime: "Completed",
-      price: 16.8,
-    },
-    {
-      id: "t6",
-      title: "Flower Bouquet – Anniversary",
-      priority: "low",
-      distance: "2.9 km",
-      pickupTime: "Delivered",
-      price: 31.25,
-    },
-  ],
+const STATUS_LABELS: Record<DeliveryStatus, string> = {
+  PENDING: "À accepter",
+  ACCEPTED: "Acceptée",
+  PICKED_UP: "Ramassée",
+  IN_PROGRESS: "En cours",
+  DELIVERED: "Livrée",
+  CANCELLED: "Annulée",
 };
 
-export default function TasksKanban() {
-  const [tasks, setTasks] = useState(initialTasks);
-  const [draggedTask, setDraggedTask] = useState<Task | null>(null);
+const STATUS_ICONS: Record<DeliveryStatus, string> = {
+  PENDING: "pending",
+  ACCEPTED: "thumb_up",
+  PICKED_UP: "package",
+  IN_PROGRESS: "local_shipping",
+  DELIVERED: "check_circle",
+  CANCELLED: "cancel",
+};
+
+export default function DeliveriesKanban() {
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [dragged, setDragged] = useState<Delivery | null>(null);
 
   const modalRef = useRef<HTMLDialogElement>(null);
 
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
+  const [form, setForm] = useState({
     pickupAddress: "",
     dropAddress: "",
-    priority: "medium" as const,
     distanceKm: "",
     price: "",
     scheduledAt: "",
   });
 
+  // Chargement initial + rechargement après modification
+  const loadDeliveries = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/deliveries", {
+        credentials: "include",
+        headers: { "Cache-Control": "no-cache" },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Erreur ${res.status}`);
+      }
+
+      const data = await res.json();
+      setDeliveries(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err: any) {
+      console.error(err);
+      setError("Impossible de charger les livraisons");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDeliveries();
+  }, []);
+
   const openModal = () => modalRef.current?.showModal();
   const closeModal = () => modalRef.current?.close();
 
-  const handleFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.title || !formData.pickupAddress || !formData.dropAddress || !formData.price) {
+    if (!form.pickupAddress || !form.dropAddress || !form.price) {
       alert("Veuillez remplir les champs obligatoires");
       return;
     }
 
-    const newTask: Task = {
-      id: `local-${Date.now()}`,
-      title: formData.title,
-      description: `${formData.pickupAddress} → ${formData.dropAddress}`,
-      priority: formData.priority,
-      distance: formData.distanceKm ? `${formData.distanceKm} km` : undefined,
-      pickupTime: formData.scheduledAt
-        ? new Date(formData.scheduledAt).toLocaleString([], { dateStyle: "short", timeStyle: "short" })
-        : "Dès que possible",
-      price: parseFloat(formData.price) || 0,
-    };
+    try {
+      const res = await fetch("/api/deliveries", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pickupAddress: form.pickupAddress,
+          dropAddress: form.dropAddress,
+          distanceKm: form.distanceKm ? Number(form.distanceKm) : undefined,
+          price: Number(form.price),
+          scheduledAt: form.scheduledAt || undefined,
+        }),
+      });
 
-    setTasks((prev) => ({
-      ...prev,
-      todo: [...prev.todo, newTask],
-    }));
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
 
-    setFormData({
-      title: "",
-      description: "",
-      pickupAddress: "",
-      dropAddress: "",
-      priority: "medium",
-      distanceKm: "",
-      price: "",
-      scheduledAt: "",
-    });
-    closeModal();
+      // Reset formulaire
+      setForm({
+        pickupAddress: "",
+        dropAddress: "",
+        distanceKm: "",
+        price: "",
+        scheduledAt: "",
+      });
+
+      closeModal();
+
+      // Recharger la liste
+      await loadDeliveries();
+    } catch (err: any) {
+      console.error(err);
+      alert("Échec de la création de la livraison");
+    }
   };
 
-  const handleDragStart = (e: DragEvent<HTMLDivElement>, task: Task) => {
-    setDraggedTask(task);
+  const allowedTransitions: Record<DeliveryStatus, DeliveryStatus[]> = {
+    PENDING: ["ACCEPTED"],
+    ACCEPTED: ["PICKED_UP"],
+    PICKED_UP: ["IN_PROGRESS"],
+    IN_PROGRESS: ["DELIVERED"],
+    DELIVERED: [],
+    CANCELLED: [],
+  };
+
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, delivery: Delivery) => {
+    setDragged(delivery);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", task.id);
   };
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>, status: TaskStatus) => {
+  const handleDrop = async (e: DragEvent<HTMLDivElement>, targetStatus: DeliveryStatus) => {
     e.preventDefault();
-    if (!draggedTask) return;
+    if (!dragged) return;
 
-    const sourceStatus = Object.keys(tasks).find((key) =>
-      tasks[key as TaskStatus].some((t) => t.id === draggedTask.id)
-    ) as TaskStatus | undefined;
+    const currentStatus = dragged.status;
 
-    if (!sourceStatus || sourceStatus === status) return;
-
-    const newSource = tasks[sourceStatus].filter((t) => t.id !== draggedTask.id);
-    const newDest = [...tasks[status], draggedTask];
-
-    setTasks({
-      ...tasks,
-      [sourceStatus]: newSource,
-      [status]: newDest,
-    });
-
-    setDraggedTask(null);
-  };
-
-  const getPriorityStyle = (priority: Task["priority"]) => {
-    switch (priority) {
-      case "urgent": return "bg-primary text-white";
-      case "high":   return "bg-orange-600 text-white";
-      case "medium": return "bg-amber-500 text-white";
-      case "low":    return "bg-gray-500 text-white";
-      default:       return "bg-gray-400 text-white";
+    if (!allowedTransitions[currentStatus]?.includes(targetStatus)) {
+      alert("Cette transition n'est pas autorisée");
+      return;
     }
+
+    try {
+      // Mise à jour optimiste
+      setDeliveries((prev) =>
+        prev.map((d) =>
+          d.id === dragged.id ? { ...d, status: targetStatus } : d
+        )
+      );
+
+      const res = await fetch(`/api/deliveries/${dragged.id}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: targetStatus }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Échec PATCH");
+      }
+
+      // Recharger pour être sûr (au cas où le backend aurait modifié d'autres champs)
+      await loadDeliveries();
+    } catch (err: any) {
+      console.error(err);
+      alert("Impossible de mettre à jour le statut");
+      // Recharger pour revenir à l'état serveur
+      await loadDeliveries();
+    }
+
+    setDragged(null);
   };
 
-  const Column = ({
-    title,
-    status,
-    icon,
-  }: {
-    title: string;
-    status: TaskStatus;
-    icon: string;
-  }) => (
-    <div className="flex-1 min-w-[320px] bg-gray-50/70 rounded-xl border border-gray-200 shadow-sm">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-3xl text-secondary">
-            {icon}
-          </span>
-          <h2 className="text-lg font-bold text-secondary">{title}</h2>
-        </div>
-        <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-gray-600 shadow-sm">
-          {tasks[status].length}
-        </span>
+  const columns = Object.keys(STATUS_LABELS) as DeliveryStatus[];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="loading loading-spinner loading-lg text-primary"></span>
       </div>
+    );
+  }
 
-      <div
-        className="p-4 min-h-[500px] flex flex-col gap-4"
-        onDragOver={handleDragOver}
-        onDrop={(e) => handleDrop(e, status)}
-      >
-        {tasks[status].map((task) => (
-          <div
-            key={task.id}
-            draggable
-            onDragStart={(e) => handleDragStart(e, task)}
-            className={`
-              bg-white rounded-lg border border-gray-200 p-4 shadow-sm 
-              hover:shadow-md hover:border-primary/40 transition-all
-              cursor-grab active:cursor-grabbing select-none
-              ${draggedTask?.id === task.id ? "opacity-40 scale-[0.98]" : ""}
-            `}
-          >
-            <div className="flex justify-between items-start gap-3 mb-2">
-              <h3 className="font-semibold text-secondary flex-1 line-clamp-2">
-                {task.title}
-              </h3>
-              <span
-                className={`text-xs font-bold px-2.5 py-1 rounded-full ${getPriorityStyle(
-                  task.priority
-                )}`}
-              >
-                {task.priority.toUpperCase()}
-              </span>
-            </div>
-
-            {task.description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                {task.description}
-              </p>
-            )}
-
-            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mt-2">
-              {task.distance && (
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">distance</span>
-                  {task.distance}
-                </div>
-              )}
-              {task.pickupTime && (
-                <div className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-base">schedule</span>
-                  {task.pickupTime}
-                </div>
-              )}
-              <div className="ml-auto font-bold text-primary">
-                ${task.price.toFixed(2)}
-              </div>
-            </div>
-          </div>
-        ))}
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-600">
+        {error}
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen text-secondary pb-12">
+    <div className="min-h-screen bg-white text-secondary pb-12">
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold text-primary tracking-tight">
-              Tasks – Kanban
+              Livraisons – Kanban
             </h1>
             <p className="mt-2 text-gray-600">
-              Drag & drop deliveries between columns
+              Glissez-déposez pour changer le statut des livraisons
             </p>
           </div>
-
-          <button
-            onClick={openModal}
-            className="btn btn-primary text-white"
-          >
+          <button onClick={openModal} className="btn btn-primary text-white">
             + Nouvelle livraison
           </button>
         </div>
 
+        {/* Modal création */}
         <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box max-w-2xl">
-            <h3 className="font-bold text-xl mb-4">Créer une nouvelle livraison</h3>
+          <div className="modal-box max-w-2xl bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <span className="material-symbols-outlined text-3xl text-primary">add_task</span>
+              <h3 className="text-xl font-bold text-secondary">Nouvelle livraison</h3>
+            </div>
 
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleCreate} className="space-y-5">
               <div className="form-control">
                 <label className="label">
-                  <span className="label-text">Titre / Désignation</span>
+                  <span className="label-text text-gray-700 font-medium">Adresse de ramassage</span>
                 </label>
                 <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleFormChange}
-                  placeholder="ex: Livraison documents urgents"
-                  className="input input-bordered w-full"
+                  name="pickupAddress"
+                  value={form.pickupAddress}
+                  onChange={handleChange}
+                  placeholder="ex : 12 Rue de la Paix, 75002 Paris"
+                  className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Adresse de ramassage</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="pickupAddress"
-                    value={formData.pickupAddress}
-                    onChange={handleFormChange}
-                    placeholder="123 Rue Principale, Ville"
-                    className="input input-bordered w-full"
-                    required
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text">Adresse de livraison</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="dropAddress"
-                    value={formData.dropAddress}
-                    onChange={handleFormChange}
-                    placeholder="456 Avenue Centrale, Ville"
-                    className="input input-bordered w-full"
-                    required
-                  />
-                </div>
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text text-gray-700 font-medium">Adresse de livraison</span>
+                </label>
+                <input
+                  name="dropAddress"
+                  value={form.dropAddress}
+                  onChange={handleChange}
+                  placeholder="ex : 45 Avenue des Champs-Élysées, 75008 Paris"
+                  className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
+                  required
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Distance (km)</span>
+                    <span className="label-text text-gray-700 font-medium">Distance (km)</span>
                   </label>
                   <input
                     type="number"
                     step="0.1"
                     name="distanceKm"
-                    value={formData.distanceKm}
-                    onChange={handleFormChange}
-                    placeholder="ex: 4.5"
-                    className="input input-bordered w-full"
+                    value={form.distanceKm}
+                    onChange={handleChange}
+                    placeholder="ex : 5.8"
+                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
                   />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Prix (€)</span>
+                    <span className="label-text text-gray-700 font-medium">Prix (€)</span>
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     name="price"
-                    value={formData.price}
-                    onChange={handleFormChange}
-                    placeholder="ex: 24.50"
-                    className="input input-bordered w-full"
+                    value={form.price}
+                    onChange={handleChange}
+                    placeholder="ex : 24.50"
+                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
                     required
                   />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
-                    <span className="label-text">Priorité</span>
+                    <span className="label-text text-gray-700 font-medium">Date / heure prévue</span>
                   </label>
-                  <select
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleFormChange}
-                    className="select select-bordered w-full"
-                  >
-                    <option value="low">Basse</option>
-                    <option value="medium">Moyenne</option>
-                    <option value="high">Haute</option>
-                    <option value="urgent">Urgente</option>
-                  </select>
+                  <input
+                    type="datetime-local"
+                    name="scheduledAt"
+                    value={form.scheduledAt}
+                    onChange={handleChange}
+                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
+                  />
                 </div>
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Date / heure prévue (optionnel)</span>
-                </label>
-                <input
-                  type="datetime-local"
-                  name="scheduledAt"
-                  value={formData.scheduledAt}
-                  onChange={handleFormChange}
-                  className="input input-bordered w-full"
-                />
-              </div>
-
-              <div className="modal-action mt-6">
-                <button type="button" className="btn btn-outline" onClick={closeModal}>
+              <div className="modal-action mt-8 flex justify-end gap-3">
+                <button
+                  type="button"
+                  className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+                  onClick={closeModal}
+                >
                   Annuler
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button
+                  type="submit"
+                  className="btn bg-primary hover:bg-primary/90 text-white border-none"
+                >
                   Créer la livraison
                 </button>
               </div>
             </form>
           </div>
-
           <form method="dialog" className="modal-backdrop">
             <button>close</button>
           </form>
         </dialog>
 
-        <div className="flex flex-col md:flex-row gap-6 overflow-x-auto pb-4">
-          <Column title="To Do"       status="todo"        icon="assignment" />
-          <Column title="In Progress" status="in-progress" icon="local_shipping" />
-          <Column title="Done"        status="done"        icon="check_circle" />
+        {/* Kanban */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          {columns.map((status) => (
+            <div
+              key={status}
+              className="bg-gray-50/70 rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-[500px]"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, status)}
+            >
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-3xl text-secondary">
+                    {STATUS_ICONS[status]}
+                  </span>
+                  <h2 className="text-lg font-bold text-secondary">{STATUS_LABELS[status]}</h2>
+                </div>
+                <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-gray-600 shadow-sm">
+                  {deliveries.filter((d) => d.status === status).length}
+                </span>
+              </div>
+
+              <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
+                {deliveries
+                  .filter((d) => d.status === status)
+                  .map((delivery) => (
+                    <div
+                      key={delivery.id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, delivery)}
+                      className={`
+                        bg-white rounded-lg border border-gray-200 p-4 shadow-sm 
+                        hover:shadow-md hover:border-primary/40 transition-all
+                        cursor-grab active:cursor-grabbing select-none
+                        ${dragged?.id === delivery.id ? "opacity-40 scale-[0.98]" : ""}
+                      `}
+                    >
+                      <div className="font-semibold text-secondary line-clamp-1 mb-1">
+                        {delivery.pickupAddress.split(",")[0]} → {delivery.dropAddress.split(",")[0]}
+                      </div>
+                      <div className="text-sm text-gray-600 line-clamp-2 mb-3">
+                        {delivery.pickupAddress} → {delivery.dropAddress}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                        {delivery.distanceKm && (
+                          <div className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-base">distance</span>
+                            {delivery.distanceKm} km
+                          </div>
+                        )}
+                        <div className="ml-auto font-bold text-primary">
+                          {delivery.price.toFixed(2)} €
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
