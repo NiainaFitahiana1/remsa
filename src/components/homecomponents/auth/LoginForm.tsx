@@ -59,28 +59,44 @@ export const LoginForm = () => {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={isLoading}
-            className="pr-10" // espace pour le bouton œil
+            rightElement={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+                className="
+                  pointer-events-auto    // important !
+                  text-slate-500 hover:text-slate-700
+                  dark:text-slate-400 dark:hover:text-slate-200
+                  focus:outline-none focus:text-primary
+                  transition-colors
+                "
+                aria-label={showPassword ? 'Masquer' : 'Afficher'}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            }
           />
-
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            disabled={isLoading}
-            className="
-              absolute right-3 top-1/2 -translate-y-1/2
-              text-slate-500 hover:text-slate-700
-              dark:text-slate-400 dark:hover:text-slate-200
-              focus:outline-none focus:text-primary
-              transition-colors
-            "
-            aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-          >
-            {showPassword ? (
-              <EyeOff className="h-5 w-5" />
-            ) : (
-              <Eye className="h-5 w-5" />
-            )}
-          </button>
+         {/* 
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              className="
+                absolute right-3 top-1/2 -translate-y-1/2
+                text-slate-500 hover:text-slate-700
+                dark:text-slate-400 dark:hover:text-slate-200
+                focus:outline-none focus:text-primary
+                transition-colors
+              "
+              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button> */}
         </div>
 
         {error && (

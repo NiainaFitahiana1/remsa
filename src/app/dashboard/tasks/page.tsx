@@ -1,6 +1,19 @@
 "use client";
 
-import { useState, DragEvent, useRef, useEffect } from "react";
+import { useState, DragEvent, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type DeliveryStatus =
   | "PENDING"
@@ -44,9 +57,9 @@ export default function DeliveriesKanban() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [dragged, setDragged] = useState<Delivery | null>(null);
-
-  const modalRef = useRef<HTMLDialogElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const [form, setForm] = useState({
     pickupAddress: "",
@@ -56,7 +69,9 @@ export default function DeliveriesKanban() {
     scheduledAt: "",
   });
 
-  // Chargement initial + rechargement après modification
+  // ────────────────────────────────────────────────
+  // Chargement des livraisons + tentative de récupération du rôle
+  // ────────────────────────────────────────────────
   const loadDeliveries = async () => {
     try {
       setLoading(true);
@@ -66,34 +81,62 @@ export default function DeliveriesKanban() {
       });
 
       if (!res.ok) {
-        throw new Error(`Erreur ${res.status}`);
+        if (res.status === 401) {
+          setError("Session expirée. Veuillez vous reconnecter.");
+        } else if (res.status === 403) {
+          setError("Accès non autorisé.");
+        } else {
+          setError(`Erreur ${res.status} lors du chargement des livraisons`);
+        }
+        return;
       }
 
       const data = await res.json();
-      setDeliveries(Array.isArray(data) ? data : []);
+      setDeliveries(Array.isArray(data) ? data : data?.deliveries || []);
       setError(null);
-    } catch (err: any) {
-      console.error(err);
+    } catch (err) {
+      console.error("Erreur loadDeliveries:", err);
       setError("Impossible de charger les livraisons");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchUserRole = async () => {
+    try {
+      const res = await fetch("/api/auth/me", {  // ← adaptez cette URL selon votre projet
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        const user = await res.json();
+        setUserRole(user?.role || null);
+      }
+    } catch (err) {
+      console.error("Impossible de récupérer le rôle utilisateur", err);
+    }
+  };
+
   useEffect(() => {
     loadDeliveries();
+    fetchUserRole();
   }, []);
 
-  const openModal = () => modalRef.current?.showModal();
-  const closeModal = () => modalRef.current?.close();
+  const canCreateDelivery = userRole === "CLIENT";
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // ────────────────────────────────────────────────
+  // Gestion du formulaire
+  // ────────────────────────────────────────────────
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!form.pickupAddress || !form.dropAddress || !form.price) {
       alert("Veuillez remplir les champs obligatoires");
       return;
@@ -114,10 +157,19 @@ export default function DeliveriesKanban() {
       });
 
       if (!res.ok) {
-        throw new Error(await res.text());
+        if (res.status === 403) {
+          alert("Vous n'avez pas la permission de créer une livraison (rôle CLIENT requis)");
+          return;
+        }
+        if (res.status === 401) {
+          alert("Session expirée. Veuillez vous reconnecter.");
+          return;
+        }
+        const errText = await res.text();
+        throw new Error(errText || "Erreur lors de la création");
       }
 
-      // Reset formulaire
+      // Reset + fermeture + refresh
       setForm({
         pickupAddress: "",
         dropAddress: "",
@@ -126,13 +178,11 @@ export default function DeliveriesKanban() {
         scheduledAt: "",
       });
 
-      closeModal();
-
-      // Recharger la liste
+      setModalOpen(false);
       await loadDeliveries();
     } catch (err: any) {
-      console.error(err);
-      alert("Échec de la création de la livraison");
+      console.error("Erreur création livraison:", err);
+      alert(err.message || "Échec de la création de la livraison");
     }
   };
 
@@ -158,19 +208,14 @@ export default function DeliveriesKanban() {
     e.preventDefault();
     if (!dragged) return;
 
-    const currentStatus = dragged.status;
-
-    if (!allowedTransitions[currentStatus]?.includes(targetStatus)) {
+    if (!allowedTransitions[dragged.status]?.includes(targetStatus)) {
       alert("Cette transition n'est pas autorisée");
       return;
     }
 
     try {
-      // Mise à jour optimiste
       setDeliveries((prev) =>
-        prev.map((d) =>
-          d.id === dragged.id ? { ...d, status: targetStatus } : d
-        )
+        prev.map((d) => (d.id === dragged.id ? { ...d, status: targetStatus } : d))
       );
 
       const res = await fetch(`/api/deliveries/${dragged.id}`, {
@@ -180,17 +225,13 @@ export default function DeliveriesKanban() {
         body: JSON.stringify({ status: targetStatus }),
       });
 
-      if (!res.ok) {
-        throw new Error("Échec PATCH");
-      }
+      if (!res.ok) throw new Error("Échec de la mise à jour du statut");
 
-      // Recharger pour être sûr (au cas où le backend aurait modifié d'autres champs)
       await loadDeliveries();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
       alert("Impossible de mettre à jour le statut");
-      // Recharger pour revenir à l'état serveur
-      await loadDeliveries();
+      await loadDeliveries(); // rollback visuel
     }
 
     setDragged(null);
@@ -201,199 +242,190 @@ export default function DeliveriesKanban() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <span className="loading loading-spinner loading-lg text-primary"></span>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-red-600">
-        {error}
+      <div className="min-h-screen flex items-center justify-center text-destructive">
+        <p className="text-lg font-medium">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white text-secondary pb-12">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-background text-foreground pb-12">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl lg:text-4xl font-bold text-primary tracking-tight">
+            <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-primary">
               Livraisons – Kanban
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-muted-foreground">
               Glissez-déposez pour changer le statut des livraisons
             </p>
           </div>
-          <button onClick={openModal} className="btn btn-primary text-white">
-            + Nouvelle livraison
-          </button>
+
+          {canCreateDelivery ? (
+            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+              <DialogTrigger asChild>
+                <Button>+ Nouvelle livraison</Button>
+              </DialogTrigger>
+
+              <DialogContent className="sm:max-w-[425px] md:max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Nouvelle livraison</DialogTitle>
+                  <DialogDescription>
+                    Remplissez les informations pour créer une nouvelle livraison.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleCreate} className="space-y-6 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="pickupAddress">Adresse de ramassage</Label>
+                    <Textarea
+                      id="pickupAddress"
+                      name="pickupAddress"
+                      value={form.pickupAddress}
+                      onChange={handleChange}
+                      placeholder="ex : 12 Rue de la Paix, 75002 Paris"
+                      required
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="dropAddress">Adresse de livraison</Label>
+                    <Textarea
+                      id="dropAddress"
+                      name="dropAddress"
+                      value={form.dropAddress}
+                      onChange={handleChange}
+                      placeholder="ex : 45 Avenue des Champs-Élysées, 75008 Paris"
+                      required
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="distanceKm">Distance (km)</Label>
+                      <Input
+                        id="distanceKm"
+                        name="distanceKm"
+                        type="number"
+                        step="0.1"
+                        value={form.distanceKm}
+                        onChange={handleChange}
+                        placeholder="ex : 5.8"
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="price">Prix (€)</Label>
+                      <Input
+                        id="price"
+                        name="price"
+                        type="number"
+                        step="0.01"
+                        value={form.price}
+                        onChange={handleChange}
+                        placeholder="ex : 24.50"
+                        required
+                      />
+                    </div>
+
+                    <div className="grid gap-2">
+                      <Label htmlFor="scheduledAt">Date / heure prévue</Label>
+                      <Input
+                        id="scheduledAt"
+                        name="scheduledAt"
+                        type="datetime-local"
+                        value={form.scheduledAt}
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+
+                  <DialogFooter className="sm:justify-end gap-3">
+                    <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                      Annuler
+                    </Button>
+                    <Button type="submit">Créer la livraison</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          ) : (
+            <Button variant="outline" disabled title="Seuls les clients peuvent créer une livraison">
+              + Nouvelle livraison
+            </Button>
+          )}
         </div>
 
-        {/* Modal création */}
-        <dialog ref={modalRef} className="modal modal-bottom sm:modal-middle">
-          <div className="modal-box max-w-2xl bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="material-symbols-outlined text-3xl text-primary">add_task</span>
-              <h3 className="text-xl font-bold text-secondary">Nouvelle livraison</h3>
-            </div>
-
-            <form onSubmit={handleCreate} className="space-y-5">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-700 font-medium">Adresse de ramassage</span>
-                </label>
-                <input
-                  name="pickupAddress"
-                  value={form.pickupAddress}
-                  onChange={handleChange}
-                  placeholder="ex : 12 Rue de la Paix, 75002 Paris"
-                  className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
-                  required
-                />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-700 font-medium">Adresse de livraison</span>
-                </label>
-                <input
-                  name="dropAddress"
-                  value={form.dropAddress}
-                  onChange={handleChange}
-                  placeholder="ex : 45 Avenue des Champs-Élysées, 75008 Paris"
-                  className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-gray-700 font-medium">Distance (km)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    name="distanceKm"
-                    value={form.distanceKm}
-                    onChange={handleChange}
-                    placeholder="ex : 5.8"
-                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-gray-700 font-medium">Prix (€)</span>
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    name="price"
-                    value={form.price}
-                    onChange={handleChange}
-                    placeholder="ex : 24.50"
-                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
-                    required
-                  />
-                </div>
-
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-gray-700 font-medium">Date / heure prévue</span>
-                  </label>
-                  <input
-                    type="datetime-local"
-                    name="scheduledAt"
-                    value={form.scheduledAt}
-                    onChange={handleChange}
-                    className="input input-bordered w-full border-gray-300 focus:border-primary focus:ring-primary/30"
-                  />
-                </div>
-              </div>
-
-              <div className="modal-action mt-8 flex justify-end gap-3">
-                <button
-                  type="button"
-                  className="btn bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
-                  onClick={closeModal}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="btn bg-primary hover:bg-primary/90 text-white border-none"
-                >
-                  Créer la livraison
-                </button>
-              </div>
-            </form>
-          </div>
-          <form method="dialog" className="modal-backdrop">
-            <button>close</button>
-          </form>
-        </dialog>
-
         {/* Kanban */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-          {columns.map((status) => (
-            <div
-              key={status}
-              className="bg-gray-50/70 rounded-xl border border-gray-200 shadow-sm flex flex-col min-h-[500px]"
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, status)}
-            >
-              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="material-symbols-outlined text-3xl text-secondary">
-                    {STATUS_ICONS[status]}
-                  </span>
-                  <h2 className="text-lg font-bold text-secondary">{STATUS_LABELS[status]}</h2>
+        <div className="overflow-x-auto pb-6">
+          <div className="inline-grid grid-flow-col gap-6 auto-cols-[minmax(400px,1fr)]">
+            {columns.map((status) => (
+              <div
+                key={status}
+                className="bg-muted/30 rounded-xl border shadow-sm flex flex-col min-h-[580px]"
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+              >
+                <div className="p-4 border-b flex items-center justify-between bg-background/80 sticky top-0 z-10 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-2xl text-primary/80">
+                      {STATUS_ICONS[status]}
+                    </span>
+                    <h2 className="text-lg font-semibold">{STATUS_LABELS[status]}</h2>
+                  </div>
+                  <div className="text-sm font-medium bg-muted px-3 py-1 rounded-full">
+                    {deliveries.filter((d) => d.status === status).length}
+                  </div>
                 </div>
-                <span className="bg-white px-3 py-1 rounded-full text-sm font-medium text-gray-600 shadow-sm">
-                  {deliveries.filter((d) => d.status === status).length}
-                </span>
-              </div>
 
-              <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
-                {deliveries
-                  .filter((d) => d.status === status)
-                  .map((delivery) => (
-                    <div
-                      key={delivery.id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, delivery)}
-                      className={`
-                        bg-white rounded-lg border border-gray-200 p-4 shadow-sm 
-                        hover:shadow-md hover:border-primary/40 transition-all
-                        cursor-grab active:cursor-grabbing select-none
-                        ${dragged?.id === delivery.id ? "opacity-40 scale-[0.98]" : ""}
-                      `}
-                    >
-                      <div className="font-semibold text-secondary line-clamp-1 mb-1">
-                        {delivery.pickupAddress.split(",")[0]} → {delivery.dropAddress.split(",")[0]}
-                      </div>
-                      <div className="text-sm text-gray-600 line-clamp-2 mb-3">
-                        {delivery.pickupAddress} → {delivery.dropAddress}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
-                        {delivery.distanceKm && (
-                          <div className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-base">distance</span>
-                            {delivery.distanceKm} km
+                <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto">
+                  {deliveries
+                    .filter((d) => d.status === status)
+                    .map((delivery) => (
+                      <div
+                        key={delivery.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, delivery)}
+                        className={`
+                          bg-card text-card-foreground rounded-lg border p-4 shadow-sm
+                          hover:shadow-md hover:border-primary/40 transition-all duration-150
+                          cursor-grab active:cursor-grabbing select-none
+                          ${dragged?.id === delivery.id ? "opacity-50 scale-95" : ""}
+                        `}
+                      >
+                        <div className="font-medium mb-1.5 line-clamp-1">
+                          {delivery.pickupAddress.split(",")[0]} →{" "}
+                          {delivery.dropAddress.split(",")[0]}
+                        </div>
+                        <div className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                          {delivery.pickupAddress} → {delivery.dropAddress}
+                        </div>
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          {delivery.distanceKm && (
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-base">distance</span>
+                              {delivery.distanceKm} km
+                            </div>
+                          )}
+                          <div className="font-semibold text-primary">
+                            {delivery.price.toFixed(2)} €
                           </div>
-                        )}
-                        <div className="ml-auto font-bold text-primary">
-                          {delivery.price.toFixed(2)} €
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
