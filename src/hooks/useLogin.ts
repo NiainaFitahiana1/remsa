@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
+import { toast } from "@/components/ui/sonner";
 
 type LoginCredentials = {
   email: string;
@@ -48,6 +49,8 @@ export function useLogin() {
 
       // Connexion réussie
       router.push("/dashboard");
+
+      toast.success("Login success");
       // ou router.replace("/dashboard") si vous voulez éviter le back button
 
       return { success: true };

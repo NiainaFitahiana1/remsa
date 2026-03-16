@@ -148,8 +148,9 @@ export default function DeliveriesKanban() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          pickupAddress: form.pickupAddress,
-          dropAddress: form.dropAddress,
+          clientId:3,     
+          pickupAddress: form.pickupAddress.trim(),
+          dropAddress: form.dropAddress.trim(),
           distanceKm: form.distanceKm ? Number(form.distanceKm) : undefined,
           price: Number(form.price),
           scheduledAt: form.scheduledAt || undefined,

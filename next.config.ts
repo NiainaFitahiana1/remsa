@@ -1,18 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Si tu as cette option, garde-la ou supprime-la si elle cause des soucis
-  // allowedDevOrigins: [...],
-
   async rewrites() {
     return [
-      // Règle 1 : protège explicitement les routes auth (si tu en as)
       {
         source: '/api/auth/:path*',
-        destination: '/api/auth/:path*',
+        destination: 'http://localhost:5000/auth/:path*',   
       },
-
-      // Règle 2 : TOUT ce qui commence par /api/ et qui n'est pas auth → proxy
-      // Cette règle DOIT être la DERNIÈRE
+      {
+        source: '/api/deliveries/:path*',
+        destination: 'http://localhost:5000/deliveries/:path*',
+      },
+      {
+        source: '/api/users/:path*',
+        destination: 'http://localhost:5000/users/:path*',
+      },
       {
         source: '/api/:path*',
         destination: '/api/proxy/:path*',
