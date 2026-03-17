@@ -50,3 +50,36 @@ export type UseRegisterReturn = {
   isLoading: boolean;
   error: string | null;
 };
+
+export type DeliveryStatus =
+  | "PENDING"
+  | "ACCEPTED"
+  | "PICKED_UP"
+  | "IN_PROGRESS"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export interface Delivery {
+  id: number;
+  pickupAddress: string;
+  dropAddress: string;
+  distanceKm?: number | null;
+  price: number;
+  status: DeliveryStatus;
+  scheduledAt?: string | null;
+  client?: { nom: string; prenom: string };
+}
+
+export interface DeliveryFormData {
+  pickupAddress: string;
+  dropAddress: string;
+  distanceKm: string;
+  price: string;
+  scheduledAt: string;
+}
+
+export type StatusConfig = {
+  label: string;
+  icon: string;
+  allowedNext: DeliveryStatus[];
+};
