@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { DeliveryFormData } from "@/types"; 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+
+import type { DeliveryFormData } from "@/types";
 import {
   GeoapifyGeocoderAutocomplete,
   GeoapifyContext,
@@ -28,6 +39,10 @@ export default function DeliveryCreateDialog({
   onCreated,
 }: DeliveryCreateDialogProps) {
   const [open, setOpen] = useState(false);
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>("");
+
   const [form, setForm] = useState<DeliveryFormData>({
     pickupAddress: "",
     dropAddress: "",
@@ -36,12 +51,16 @@ export default function DeliveryCreateDialog({
     scheduledAt: "",
   });
 
+  // Stockage des coordonnées extraites de Geoapify
+  const [coords, setCoords] = useState<{
+    pickup?: { lat: number; lon: number };
+    drop?: { lat: number; lon: number };
+  }>({});
+
   const GEOAPIFY_API_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
 
   if (!GEOAPIFY_API_KEY) {
-    console.warn(
-      "Clé Geoapify manquante. Ajoute NEXT_PUBLIC_GEOAPIFY_API_KEY dans .env.local"
-    );
+    console.warn("Clé Geoapify manquante !");
   }
 
   const handleManualChange = (
@@ -51,22 +70,90 @@ export default function DeliveryCreateDialog({
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Quand l'utilisateur sélectionne une suggestion Geoapify
   const handlePlaceSelect = (
-    value: any, // GeoJSON Feature
+    value: any,
     field: "pickupAddress" | "dropAddress"
   ) => {
-    if (value?.properties?.formatted) {
+    if (value?.properties) {
+      const { formatted, lat, lon } = value.properties;
+
       setForm((prev) => ({
         ...prev,
-        [field]: value.properties.formatted.trim(),
+        [field]: formatted?.trim() || "",
       }));
 
-      // Optionnel : tu peux stocker plus d'informations si besoin
-      // ex: latitude, longitude, ville, code postal, etc.
-      console.log(`Adresse sélectionnée (${field}):`, value.properties);
+      setCoords((prev) => ({
+        ...prev,
+        [field === "pickupAddress" ? "pickup" : "drop"]: { lat, lon },
+      }));
+
+      console.log(`Adresse ${field} :`, { formatted, lat, lon });
     }
   };
+
+  // Calcul automatique de la distance via Geoapify Routing API
+  useEffect(() => {
+    if (!coords.pickup || !coords.drop || !GEOAPIFY_API_KEY) {
+      setForm((prev) => ({ ...prev, distanceKm: "" }));
+      return;
+    }
+
+    const fetchDistance = async () => {
+      const waypoints = `${coords.pickup.lat},${coords.pickup.lon}|${coords.drop.lat},${coords.drop.lon}`;
+      const url = `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=drive&apiKey=${GEOAPIFY_API_KEY}`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        // Structure typique : features[0].properties.distance (en mètres)
+        const route = data?.features?.[0]?.properties;
+        if (route?.distance) {
+          const distanceKm = (route.distance / 1000).toFixed(1);
+          setForm((prev) => ({ ...prev, distanceKm }));
+          console.log(`Distance calculée : ${distanceKm} km`);
+        } else {
+          console.warn("Pas de distance dans la réponse", data);
+        }
+      } catch (err) {
+        console.error("Erreur Geoapify Routing :", err);
+        // Optionnel : fallback haversine (à vol d'oiseau)
+        const dist = haversine(
+          coords.pickup.lat,
+          coords.pickup.lon,
+          coords.drop.lat,
+          coords.drop.lon
+        );
+        setForm((prev) => ({ ...prev, distanceKm: dist.toFixed(1) }));
+      }
+    };
+
+    fetchDistance();
+  }, [coords.pickup, coords.drop, GEOAPIFY_API_KEY]);
+
+  // Fallback simple à vol d'oiseau si l'API routing échoue
+  function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(lat1 * (Math.PI / 180)) *
+        Math.cos(lat2 * (Math.PI / 180)) *
+        Math.sin(dLon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  const scheduledAt = useMemo(() => {
+    if (!selectedDate || !selectedTime) return "";
+    const [hours, minutes] = selectedTime.split(":").map(Number);
+    const dateWithTime = new Date(selectedDate);
+    dateWithTime.setHours(hours, minutes, 0, 0);
+    return dateWithTime.toISOString();
+  }, [selectedDate, selectedTime]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +173,7 @@ export default function DeliveryCreateDialog({
           dropAddress: form.dropAddress.trim(),
           distanceKm: form.distanceKm ? Number(form.distanceKm) : undefined,
           price: Number(form.price),
-          scheduledAt: form.scheduledAt || undefined,
+          scheduledAt: scheduledAt || undefined,
         }),
       });
 
@@ -103,7 +190,7 @@ export default function DeliveryCreateDialog({
         throw new Error(errText || "Erreur lors de la création");
       }
 
-      // Reset + fermeture
+      // Reset
       setForm({
         pickupAddress: "",
         dropAddress: "",
@@ -111,6 +198,9 @@ export default function DeliveryCreateDialog({
         price: "",
         scheduledAt: "",
       });
+      setCoords({});
+      setSelectedDate(undefined);
+      setSelectedTime("");
       setOpen(false);
       onCreated?.();
     } catch (err: any) {
@@ -139,15 +229,12 @@ export default function DeliveryCreateDialog({
             <div className="grid gap-2">
               <Label htmlFor="pickupAddress">Adresse de ramassage</Label>
               <GeoapifyGeocoderAutocomplete
-                placeholder="ex : 12 Rue de la Paix, 75002 Paris"
                 value={form.pickupAddress}
                 placeSelect={(val) => handlePlaceSelect(val, "pickupAddress")}
-                // suggestionsChange={(val) => console.log("suggestions pickup:", val)}
-                // filterByCountryCode={["fr"]}
+                filterByCountryCode={["mg"]}
                 lang="fr"
+                placeholder="ex: Antananarivo, Analakely"
                 limit={7}
-                // biasByProximity={{ lat: 48.8566, lon: 2.3522 }} // optionnel : biais Paris
-                // biasByCircle={{ lon: 2.3522, lat: 48.8566, radiusMeters: 50000 }}
                 inputStyle={{
                   width: "100%",
                   padding: "0.5rem 0.75rem",
@@ -162,11 +249,11 @@ export default function DeliveryCreateDialog({
             <div className="grid gap-2">
               <Label htmlFor="dropAddress">Adresse de livraison</Label>
               <GeoapifyGeocoderAutocomplete
-                placeholder="ex : 45 Avenue des Champs-Élysées, 75008 Paris"
                 value={form.dropAddress}
                 placeSelect={(val) => handlePlaceSelect(val, "dropAddress")}
-                filterByCountryCode={["fr"]}
+                filterByCountryCode={["mg"]}
                 lang="fr"
+                placeholder="ex: Toamasina, centre ville"
                 limit={7}
                 inputStyle={{
                   width: "100%",
@@ -178,8 +265,7 @@ export default function DeliveryCreateDialog({
               />
             </div>
 
-            {/* Distance, Prix, Date */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="distanceKm">Distance (km)</Label>
                 <Input
@@ -189,7 +275,13 @@ export default function DeliveryCreateDialog({
                   step="0.1"
                   value={form.distanceKm}
                   onChange={handleManualChange}
-                  placeholder="ex : 5.8"
+                  placeholder={
+                    coords.pickup && coords.drop
+                      ? "Calcul en cours..."
+                      : "ex : 5.8 (auto ou manuel)"
+                  }
+                  disabled={!!(coords.pickup && coords.drop)} // Lecture seule si calcul auto
+                  // Retire disabled si tu veux permettre la modification manuelle
                 />
               </div>
 
@@ -208,16 +300,54 @@ export default function DeliveryCreateDialog({
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="scheduledAt">Date / heure prévue</Label>
+                <Label>Date prévue</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !selectedDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? (
+                        format(selectedDate, "PPP", { locale: fr })
+                      ) : (
+                        <span>La date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                      locale={fr}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="time">Heure prévue</Label>
                 <Input
-                  id="scheduledAt"
-                  name="scheduledAt"
-                  type="datetime-local"
-                  value={form.scheduledAt}
-                  onChange={handleManualChange}
+                  id="time"
+                  type="time"
+                  value={selectedTime}
+                  onChange={(e) => setSelectedTime(e.target.value)}
+                  disabled={!selectedDate}
                 />
               </div>
             </div>
+
+            {/* Optionnel : feedback visuel */}
+            {form.distanceKm && (
+              <p className="text-sm text-muted-foreground">
+                Distance estimée : {form.distanceKm} km (via Geoapify Routing)
+              </p>
+            )}
 
             <DialogFooter className="sm:justify-end gap-3">
               <Button

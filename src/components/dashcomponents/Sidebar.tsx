@@ -52,6 +52,18 @@ export default function Sidebar() {
         </Link>
 
         <Link
+          href="/dashboard/product"
+          className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${
+            isActive('/dashboard/products')
+              ? 'bg-secondary/10 text-secondary'
+              : 'text-muted-foreground hover:bg-muted hover:text-secondary'
+          }`}
+        >
+          <span className="material-symbols-outlined">inventory_2</span>
+          <span>Products</span>
+        </Link>
+
+        <Link
           href="/dashboard/tasks"
           className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${
             isActive('/dashboard/tasks')

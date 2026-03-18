@@ -1,0 +1,122 @@
+Voici une **conception détaillée par item** (par module / entité principale) de ta plateforme **SecureDeliver** (ou le nom que tu choisiras).  
+
+J'ai structuré ça comme un **cahier des charges fonctionnel light** prêt à être affiné avec un designer / développeur. Chaque item contient :
+
+- Nom du module / entité  
+- Acteurs principaux  
+- Fonctionnalités clés (MVP 2026)  
+- Points sécurité / confiance spécifiques  
+- Écrans / flux principaux  
+- Monétisation liée (si applicable)  
+- Notes techniques / pièges courants
+
+### 1. Utilisateur – Vendeur (Client / Expéditeur)
+
+**Rôle** : Personne ou e-commerçant qui envoie un colis  
+**Objectif principal** : Publier une annonce sécurisée et trouver un livreur fiable
+
+- Création de compte (email + téléphone + vérification 2FA obligatoire)  
+- Profil vendeur : nom société / SIRET (optionnel), adresse principale, historique livraisons, note moyenne  
+- Créer une annonce de livraison :  
+  - Adresse départ + arrivée (autocomplétion + validation code postal)  
+  - Photos du colis (min 2, max 6)  
+  - Description + dimensions / poids / valeur déclarée  
+  - Date / créneau horaire souhaité  
+  - Prix proposé (fixe ou fourchette)  
+  - Option « Assurance intégrée » (checkbox + surcoût auto-calculé)  
+- Voir liste de ses annonces (en cours, assignées, terminées)  
+- Chat in-app avec livreurs postulants  
+- Recherche livreurs à proximité (premium) : filtres (note ≥4.3, type véhicule, rayon km, assurance valide)  
+- Appel direct ou messagerie premium  
+- Confirmer transfert colis → **scan QR du livreur** (caméra → vérif instantanée)  
+- Valider livraison finale (photo + signature électronique ou code PIN)  
+
+**Sécurité clé** : Valeur déclarée bloque si > plafond sans assurance partenaire  
+**Monétisation** : Abonnement mensuel (ex: 9,90 €) pour accès recherche + appel + stats avancées  
+**Écrans prioritaires** : Dashboard vendeur | Créer annonce | Détail annonce | Recherche livreurs premium
+
+### 2. Utilisateur – Livreur / Coursier freelance
+
+**Rôle** : Indépendant qui accepte des missions  
+**Objectif principal** : Trouver des livraisons rentables et prouver sa fiabilité
+
+- Inscription renforcée : pièce d’identité + permis (si véhicule) + photo + justificatif véhicule + attestation assurance RC pro  
+- Vérification manuelle / auto (badge « Vérifié » + « Assuré »)  
+- Profil public visible : note, nb livraisons, % scans QR réussis, types véhicules, rayon d’action, disponibilités  
+- Voir annonces disponibles autour de soi (carte interactive + liste)  
+- Postuler à une annonce (prix négocié ou prix fixe)  
+- Négocier via chat  
+- Accepter mission → génération automatique **QR code unique** par livraison  
+- Scanner QR du vendeur au moment du handover (preuve de prise en charge)  
+- GPS tracking optionnel pendant livraison (activé par le vendeur)  
+- Upload photo colis + preuve livraison finale  
+- Tableau de bord gains : commissions, historique, stats confiance  
+
+**Sécurité clé** : Impossible d’accepter mission si assurance expirée ou note < seuil  
+**Monétisation** : Commission prélevée 12–18 % sur chaque livraison  
+**Écrans prioritaires** : Carte missions proches | Détail mission | Scan QR | Preuve livraison
+
+### 3. Module Sécurité & Scan QR (cœur différenciant)
+
+**Rôle** : Garantir la traçabilité et la confiance au moment du transfert
+
+- Génération QR unique par livraison (contient : ID livraison, ID vendeur, ID livreur, timestamp, hash)  
+- QR dynamique (valide seulement 30–60 min avant créneau + 1 seule utilisation)  
+- Deux scans obligatoires :  
+  1. Livreur scanne QR vendeur → enregistre prise en charge (GPS + heure + photo optionnelle)  
+  2. Vendeur scanne QR livreur (ou inverse selon qui a le téléphone) → confirme transfert  
+- Logs immuables : horodatage + géolocalisation + identité des deux parties  
+- Blocage automatique si scan échoue ou profils non conformes  
+- Alerte push si scan non effectué dans les 15 min après RDV  
+- Preuve juridique (export PDF horodaté pour litige/assurance)  
+
+**Sécurité clé** : QR signé cryptographiquement (impossible à falsifier)  
+**Technique** : ZXing / Vision Camera + backend validation temps réel  
+**Écrans** : Écran scan (plein écran caméra + overlay instructions) | Confirmation transfert
+
+### 4. Matching & Négociation
+
+- Annonce non assignée → visible publiquement (liste + carte)  
+- Postulations multiples (livreurs proposent prix / délai)  
+- Chat in-app (messages + photos + localisation partagée)  
+- Option « Assignation directe » par le vendeur (premium)  
+- Notification push / email quand nouvelle postulation  
+
+**Monétisation** : Feature assignation directe = abonnement vendeur requis
+
+### 5. Paiement & Monétisation globale
+
+- **Commission** : 12–18 % prélevée sur le prix final payé par vendeur  
+- **Abonnement vendeur** : 9,90–19,90 € / mois (recherche géo + appel + stats)  
+- **Assurance optionnelle** : 1–5 % de la valeur déclarée (via partenariat AXA / Allianz API)  
+- **Pub ciblée** : espaces sponsorisés (ex: « Livreurs premium du mois »)  
+- Paiement : Stripe Connect (paiement direct livreur après livraison validée – 48h)  
+
+### 6. Assurance & Confiance
+
+- Vérification documents livreur (upload + OCR + expiration auto)  
+- Badge « Assuré » visible sur profil  
+- Assurance colis automatique si valeur déclarée < 300–500 € (gratuite ou incluse)  
+- Litige → médiateur plateforme + logs QR comme preuve  
+
+### 7. Dashboard Admin / Modération
+
+- Validation profils livreurs (manuelle ou semi-auto)  
+- Gestion litiges (accès logs QR + photos + chat)  
+- Monitoring fraudes (alertes scans multiples / faux GPS)  
+- Stats globales (taux scan réussi, churn, CA)
+
+### Priorisation MVP (version minimale viable – 3-4 mois dev)
+
+1. Inscription + vérification basique vendeur & livreur  
+2. Créer / voir annonces  
+3. Postuler + chat simple  
+4. Scan QR double (prise en charge + transfert)  
+5. Paiement commission + release fonds livreur  
+6. Notes & avis post-livraison  
+
+Ensuite itérations : recherche géo premium, appel direct, assurance avancée, tracking live, etc.
+
+Tu veux que je développe plus en détail un item précis (ex : flux exact du scan QR avec wireframe textuel, ou modèle de données DB, ou écran par écran du vendeur) ?  
+
+Ou préfères-tu un **schéma de flux global** (texte ou markdown) ? Dis-moi !

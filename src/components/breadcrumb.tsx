@@ -22,7 +22,7 @@ export function Breadcrumbs() {
         "flex items-center flex-wrap gap-1.5",
         "text-sm text-muted-foreground",
         "px-4 py-3 md:px-6 md:py-4", 
-        "sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b"
+        "sticky top-0 z-10 bg-background backdrop-blur-sm border-b"
       )}
     >
       {segments.map((segment, index) => {
@@ -34,25 +34,34 @@ export function Breadcrumbs() {
           .replace(/\b\w/g, (l) => l.toUpperCase());
 
         return (
-          <React.Fragment key={href}>
-            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/70" />
+          <div key={href} className="flex items-center gap-1.5">
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/50" />
 
             {isLast ? (
               <span
                 aria-current="page"
-                className="font-medium text-foreground"
+                className={cn(
+                  "px-2.5 py-1 rounded-md",
+                  "bg-primary/10 text-primary",
+                  "font-medium"
+                )}
               >
                 {label}
               </span>
             ) : (
               <Link
                 href={href}
-                className="hover:text-foreground transition-colors"
+                className={cn(
+                  "px-2.5 py-1 rounded-md",
+                  "bg-muted hover:bg-muted/70",
+                  "transition-all duration-200",
+                  "hover:text-foreground"
+                )}
               >
                 {label}
               </Link>
             )}
-          </React.Fragment>
+          </div>
         );
       })}
     </nav>
