@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
+import ProductList from "@/components/dashcomponents/product/ProductList";
 const productStats = [
   { category: "Électronique", count: 48, revenue: 12480 },
   { category: "Vêtements", count: 95, revenue: 7580 },
@@ -148,8 +148,7 @@ export default function ProductsPage() {
             </div>
           </div>
         </div>
-
-        {/* Tu peux ajouter ici une section "Gestion complète" avec boutons : Ajouter produit, Voir catalogue, etc. */}
+        <ProductList/>
       </div>
     </div>
   );

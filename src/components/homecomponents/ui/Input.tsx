@@ -30,6 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps & {
               ${className}
             `}
             {...props}
+            value={props.value ?? ''} 
           />
           {rightElement && (
             <div className="absolute right-0 top-0 bottom-0 flex items-center pr-3 pointer-events-none">
