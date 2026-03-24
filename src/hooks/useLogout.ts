@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-
+import { toast } from "@/components/ui/sonner";
 export function useLogout() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -25,6 +25,8 @@ export function useLogout() {
 
       // Redirige vers login
       router.push("/login");
+
+      toast.success("Logout success");
       router.refresh();
     } catch (err) {
       console.error(err);

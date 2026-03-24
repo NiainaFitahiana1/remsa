@@ -6,34 +6,37 @@ import { usePathname } from "next/navigation";
 export default function Breadcrumb() {
   const pathname = usePathname();
 
-  // On split le chemin et on filtre les segments vides
-  const pathSegments = pathname
-    .split("/")
-    .filter((segment) => segment !== "" && segment !== "dashboard");
+  if (pathname === "/dashboard" || pathname === "/admin" || pathname === "/livreur") {
+    return null;
+  }
 
-  // On construit les "crumbs" avec leur chemin cumulatif
-  const crumbs = pathSegments.map((segment, index) => {
-    const isLast = index === pathSegments.length - 1;
-    const href = `/dashboard/${pathSegments.slice(0, index + 1).join("/")}`;
+  const pathSegments = pathname.split("/").filter(Boolean);
+  const prefix = pathSegments[0];
+  const segments = pathSegments.slice(1);
 
-    // Transformation humaine du segment (slug → titre lisible)
+  const crumbs = segments.map((segment, index) => {
+    const isLast = index === segments.length - 1;
+    const href = `/${prefix}/${segments.slice(0, index + 1).join("/")}`;
+
     let label = segment
       .replace(/-/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
 
-    // Cas spéciaux si besoin
-    if (label === "") label = "Dashboard";
+    if (label === "Product") label = "Products";
+    if (label === "Delivery") label = "Deliveries";
 
     return { label, href, isLast };
   });
 
-  // Toujours commencer par "Dashboard" comme premier élément
-  const fullCrumbs = [{ label: "Dashboard", href: "/dashboard", isLast: false }, ...crumbs];
+  const homeCrumb = {
+    label: prefix === "dashboard" ? "Dashboard" : 
+           prefix === "admin" ? "Admin" : 
+           "Livreur",
+    href: `/${prefix}`,
+    isLast: false,
+  };
 
-  if (pathname === "/dashboard") {
-    // Pas de breadcrumb sur la page d'accueil du dashboard
-    return null;
-  }
+  const fullCrumbs = [homeCrumb, ...crumbs];
 
   return (
     <nav aria-label="Breadcrumb" className="">

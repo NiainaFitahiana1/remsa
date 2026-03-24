@@ -3,15 +3,17 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
   if (
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/static/") ||
-    pathname.includes(".") ||         
+    pathname.includes(".") ||
     pathname === "/favicon.ico"
   ) {
     return NextResponse.next();
   }
+
   if (request.headers.has("x-middleware-subrequest")) {
     return new NextResponse("Forbidden", { status: 403 });
   }
@@ -24,7 +26,7 @@ export async function middleware(request: NextRequest) {
         "x-protect-mw": "1",
       },
       cache: "no-store",
-      redirect: "manual",     
+      redirect: "manual",
     });
 
     if (!res.ok) {
@@ -33,13 +35,29 @@ export async function middleware(request: NextRequest) {
 
     const user = await res.json();
 
-    if (!user?.id || user?.role !== "CLIENT") {
-      throw new Error("Accès interdit");
+    if (!user?.id) {
+      throw new Error("Utilisateur non valide");
+    }
+
+    const role = user.role;
+
+    if (pathname.startsWith("/dashboard/")) {
+      if (role !== "CLIENT") {
+        throw new Error("Accès interdit");
+      }
+    } else if (pathname.startsWith("/admin/")) {
+      if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
+        throw new Error("Accès interdit");
+      }
+    } else if (pathname.startsWith("/livreur/")) {
+      if (role !== "DRIVER") {
+        throw new Error("Accès interdit");
+      }
     }
 
     const response = NextResponse.next();
     response.headers.set("x-user-id", user.id);
-    response.headers.set("x-user-role", user.role);
+    response.headers.set("x-user-role", role);
 
     return response;
   } catch (err) {
@@ -52,5 +70,7 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/admin/:path*",
+    "/livreur/:path*",
   ],
 };

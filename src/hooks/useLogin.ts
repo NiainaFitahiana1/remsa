@@ -29,7 +29,7 @@ export function useLogin() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",           // indispensable pour les cookies httpOnly
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
 
@@ -47,11 +47,31 @@ export function useLogin() {
         return { success: false, error: message };
       }
 
-      // Connexion réussie
-      router.push("/dashboard");
+      // Récupérer les informations de l'utilisateur après connexion
+      const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        method: "GET",
+        credentials: "include",
+      });
 
-      toast.success("Login success");
-      // ou router.replace("/dashboard") si vous voulez éviter le back button
+      if (!userRes.ok) {
+        throw new Error("Impossible de récupérer les informations utilisateur");
+      }
+
+      const user = await userRes.json();
+
+      // Redirection selon le rôle
+      let redirectPath = "/dashboard";
+
+      if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+        redirectPath = "/admin";
+      } else if (user.role === "DRIVER") {
+        redirectPath = "/livreur";
+      } else if (user.role === "CLIENT") {
+        redirectPath = "/dashboard";
+      }
+
+      router.push(redirectPath);
+      toast.success("Connexion réussie");
 
       return { success: true };
 
