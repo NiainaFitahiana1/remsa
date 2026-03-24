@@ -12,107 +12,124 @@ module.exports = {
   theme: {
     container: {
       center: true,
-      padding: '2rem',
+      padding: "2rem",
       screens: {
-        '2xl': '1400px'
-      }
+        "2xl": "1400px",
+      },
     },
+
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#e9590c',       // ton orange terracotta signature
-          foreground: '#ffffff',     // texte sur primary → blanc pur
-          50:  '#fef5f0',
-          100: '#fee8d9',
-          200: '#fcd0b3',
-          300: '#f9b38c',
-          400: '#f69666',
-          500: '#e9590c',
-          600: '#d14e0b',
-          700: '#b03f09',
-          800: '#8f3207',
-          900: '#752906',
+          DEFAULT: "#d97706",        // or-600 (jaune or riche)
+          foreground: "#ffffff",
+          50: "#fffbeb",
+          100: "#fef3c7",
+          200: "#fde68a",
+          300: "#fcd34d",
+          400: "#fbbf24",
+          500: "#f59e0b",
+          600: "#d97706",
+          700: "#b45309",
+          800: "#92400e",
+          900: "#78350f",
+          950: "#451a03",
         },
 
         secondary: {
-          DEFAULT: '#1e293b',        // slate-900 / bleu nuit profond (complémentaire élégant)
-          foreground: '#f1f5f9',     // texte clair sur fond sombre
+          DEFAULT: "#374151",        // gray-700 (gris neutre foncé)
+          foreground: "#f9fafb",
         },
 
         accent: {
-          DEFAULT: '#d4a373',        // doré-bronze chaud, très cosy avec l’orange
-          foreground: '#1e293b',     // texte sombre dessus
+          DEFAULT: "#eab308",        // yellow-500 (or clair pour accents)
+          foreground: "#1f2937",
         },
 
         background: {
-          DEFAULT: '#f8f6f5',        // light – ton beige très clair chaud
-          dark:  '#221610',          // dark – ton marron presque noir chaleureux
+          DEFAULT: "#f8f7f4",        // neutral-light chaleureux
+          dark: "#111827",           // gris foncé neutre pour dark mode
         },
-
-        // Pour les borders, inputs, etc. (variables CSS souvent utilisées par shadcn)
-        border: 'hsl(20 14% 90%)',          // light mode → beige clair
-        input: 'hsl(20 14% 90%)',
-        ring: '#e9590c',                    // focus ring = primary
 
         foreground: {
-          DEFAULT: '#1f1a17',         // texte principal light mode (proche noir chaud)
-          dark:   '#f5f0ed',          // texte principal dark mode (proche blanc cassé)
+          DEFAULT: "#1f2937",        // gray-800
+          dark: "#f3f4f6",
         },
 
-        muted: {
-          DEFAULT: '#e2dedb',
-          foreground: '#6b5e57',
+        card: {
+          DEFAULT: "#ffffff",
+          dark: "#1f2937",
         },
-        'muted-foreground': '#8d7c72',
-
-        destructive: {
-          DEFAULT: '#e9590c',         // rouge sombre (danger) – reste dans la vibe warm
-          foreground: '#ffffff',
+        "card-foreground": {
+          DEFAULT: "#1f2937",
+          dark: "#f3f4f6",
         },
 
         popover: {
-          DEFAULT: 'hsl(0 0% 100%)',  // light
-          dark:  '#2a1e18',
+          DEFAULT: "#ffffff",
+          dark: "#1f2937",
         },
-        'popover-foreground': 'hsl(20 14% 4%)',
+        "popover-foreground": {
+          DEFAULT: "#1f2937",
+          dark: "#f3f4f6",
+        },
 
-        card: {
-          DEFAULT: 'hsl(0 0% 100%)',
-          dark:  '#2a1e18',
+        muted: {
+          DEFAULT: "#f3f4f6",        // neutral-light
+          foreground: "#6b7280",     // gray-500
         },
-        'card-foreground': 'hsl(20 14% 4%)',
+        "muted-foreground": "#9ca3af", // gray-400
+
+        border: "#e5e7eb",           // gray-200
+        input: "#e5e7eb",
+        ring: "#d97706",             // primary or
+
+        destructive: {
+          DEFAULT: "#ef4444",
+          foreground: "#ffffff",
+        },
+
+        surface: "#f8f7f4",
+        "surface-dark": "#111827",
       },
 
       borderRadius: {
-        DEFAULT: '3px',
-        sm:    '3px',
-        md:    '3px',
-        lg:    '3px',
-        xl:    '3px',
-        '2xl': '6px',
-        full:  '9999px',
+        DEFAULT: "8px",
+        sm: "6px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "20px",
+        full: "9999px",
       },
 
       fontFamily: {
-        display: ["Rubik", "sans-serif"],
-        sans:    ["Inter", "sans-serif"],    // ou body si tu préfères garder le nom
+        display: ["Rubik", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        body: ["Inter", "system-ui", "sans-serif"],
       },
 
       keyframes: {
-        'accordion-down': {
-          from: { height: '0' },
-          to: { height: 'var(--radix-accordion-content-height)' },
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
-        'accordion-up': {
-          from: { height: 'var(--radix-accordion-content-height)' },
-          to: { height: '0' },
-        }
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+        "fade-in": {
+          from: { opacity: "0", transform: "translateY(10px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
+
       animation: {
-        'accordion-down': 'accordion-down 0.2s ease-out',
-        'accordion-up': 'accordion-up 0.2s ease-out',
-      }
-    }
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.4s ease-out forwards",
+      },
+    },
   },
 
   plugins: [require("tailwindcss-animate")],
