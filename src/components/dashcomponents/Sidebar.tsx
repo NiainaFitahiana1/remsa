@@ -159,7 +159,7 @@ export default function Sidebar() {
               <span className="material-symbols-outlined">home</span>
               <span>Accueil</span>
             </Link>
-            <Link href="/livreur/deliveries" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/livreur/deliveries') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
+            <Link href="/livreur/requests" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/livreur/deliveries') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
               <span className="material-symbols-outlined">local_shipping</span>
               <span>Mes Livraisons</span>
             </Link>
