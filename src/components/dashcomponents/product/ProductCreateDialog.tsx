@@ -15,14 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, X, Upload } from "lucide-react";
+import Image from "next/image";
 
 type ProductFormData = {
   name: string;
   description: string;
   price: string;
-  imageUrl: string;
   stock: string;
   isActive: boolean;
 };
@@ -34,9 +33,10 @@ interface ProductDialogProps {
     name: string;
     description?: string | null;
     price: number;
-    imageUrl?: string | null;
+    imageUrl?: string | null; // gardé pour compatibilité edit (image principale existante)
     stock?: number | null;
     isActive: boolean;
+    images?: Array<{ id: number; url: string; isMain: boolean }>; // optionnel si tu charges les images existantes
   };
   onSuccess?: () => void;
 }
@@ -56,17 +56,24 @@ export default function ProductDialog({
     name: product?.name || "",
     description: product?.description || "",
     price: product?.price?.toString() || "",
-    imageUrl: product?.imageUrl || "",
     stock: product?.stock?.toString() || "0",
     isActive: product?.isActive ?? true,
   };
 
   const [form, setForm] = useState<ProductFormData>(initialForm);
+  const [images, setImages] = useState<File[]>([]);           // nouvelles images à uploader
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]); // previews locales
+  const [existingImages, setExistingImages] = useState(      // images déjà présentes (edit)
+    product?.images || []
+  );
 
   const resetForm = useCallback(() => {
     setForm(initialForm);
+    setImages([]);
+    setImagePreviews([]);
+    setExistingImages(product?.images || []);
     setError(null);
-  }, [initialForm]);
+  }, [initialForm, product]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -77,6 +84,40 @@ export default function ProductDialog({
 
   const handleToggleActive = (checked: boolean) => {
     setForm((prev) => ({ ...prev, isActive: checked }));
+  };
+
+  // Gestion de l'upload multiple d'images
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter((file) =>
+      file.type.startsWith("image/")
+    );
+
+    if (validFiles.length !== files.length) {
+      setError("Seules les images sont acceptées");
+      return;
+    }
+
+    setImages((prev) => [...prev, ...validFiles]);
+
+    // Créer les previews
+    const newPreviews = validFiles.map((file) => URL.createObjectURL(file));
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
+  };
+
+  const removeNewImage = (index: number) => {
+    const newImages = [...images];
+    const newPreviews = [...imagePreviews];
+
+    URL.revokeObjectURL(newPreviews[index]); // libérer la mémoire
+
+    newImages.splice(index, 1);
+    newPreviews.splice(index, 1);
+
+    setImages(newImages);
+    setImagePreviews(newPreviews);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,39 +137,37 @@ export default function ProductDialog({
       return;
     }
 
-    const payload: any = {
-      name: form.name.trim(),
-      description: form.description.trim() || undefined,
-      price: Number(form.price),
-      imageUrl: form.imageUrl.trim() || undefined,
-      stock: form.stock ? Number(form.stock) : 0,
-      isActive: form.isActive,
-    };
+    const formData = new FormData();
+
+    formData.append("name", form.name.trim());
+    if (form.description.trim()) formData.append("description", form.description.trim());
+    formData.append("price", form.price);
+    formData.append("stock", form.stock || "0");
+    formData.append("isActive", form.isActive.toString());
+
+    // Ajouter les nouvelles images
+    images.forEach((file) => {
+      formData.append("images", file);   // nom du champ = "images"
+    });
 
     try {
-      const url = isEdit ? `/api/products/${product?.id}` : "/api/products";
+      const url = isEdit 
+        ? `/api/products/${product?.id}` 
+        : "/api/products";
       const method = isEdit ? "PATCH" : "POST";
 
       const res = await fetch(url, {
         method,
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: formData,                    // ← plus de Content-Type (le navigateur le met)
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          setError("Session expirée. Veuillez vous reconnecter.");
-        } else if (res.status === 403) {
-          setError("Vous n'avez pas la permission d'effectuer cette action.");
-        } else {
-          const err = await res.json();
-          setError(err.message || "Une erreur est survenue");
-        }
+        const err = await res.json().catch(() => ({}));
+        setError(err.message || "Une erreur est survenue");
         return;
       }
 
-      // Succès
       setOpen(false);
       onSuccess?.();
       resetForm();
@@ -163,13 +202,13 @@ export default function ProductDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[425px] md:max-w-lg">
+      <DialogContent className="sm:max-w-[425px] md:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5 py-4">
+        <form onSubmit={handleSubmit} className="space-y-6 py-4">
           {/* Nom */}
           <div className="grid gap-2">
             <Label htmlFor="name">Nom du produit *</Label>
@@ -210,7 +249,6 @@ export default function ProductDialog({
                 min="0.01"
                 value={form.price}
                 onChange={handleChange}
-                placeholder="ex : 12.90"
                 required
                 disabled={loading}
               />
@@ -225,30 +263,78 @@ export default function ProductDialog({
                 min="0"
                 value={form.stock}
                 onChange={handleChange}
-                placeholder="ex : 45"
                 disabled={loading}
               />
             </div>
           </div>
 
-          {/* URL Image */}
-          <div className="grid gap-2">
-            <Label htmlFor="imageUrl">URL de l'image</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              type="url"
-              value={form.imageUrl}
-              onChange={handleChange}
-              placeholder="https://exemple.com/image.jpg"
-              disabled={loading}
-            />
-            {form.imageUrl && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Aperçu : <a href={form.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">
-                  ouvrir l'image
-                </a>
-              </p>
+          {/* Upload Images */}
+          <div className="grid gap-3">
+            <Label>Images du produit</Label>
+            
+            {/* Zone de drop / bouton upload */}
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/50 rounded-lg cursor-pointer hover:border-primary/50 transition-colors">
+              <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+              <span className="text-sm text-muted-foreground">
+                Cliquez ou glissez des images ici
+              </span>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={loading}
+              />
+            </label>
+
+            {/* Previews des nouvelles images */}
+            {imagePreviews.length > 0 && (
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <Image
+                      src={preview}
+                      alt={`Preview ${index}`}
+                      width={120}
+                      height={120}
+                      className="w-full aspect-square object-cover rounded-md border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(index)}
+                      className="absolute top-1 right-1 bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Images existantes en mode édition */}
+            {isEdit && existingImages.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Images existantes :</p>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                  {existingImages.map((img) => (
+                    <div key={img.id} className="relative">
+                      <Image
+                        src={img.url}
+                        alt="Image existante"
+                        width={120}
+                        height={120}
+                        className="w-full aspect-square object-cover rounded-md border"
+                      />
+                      {img.isMain && (
+                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded">
+                          Principale
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
@@ -274,7 +360,7 @@ export default function ProductDialog({
             <p className="text-sm text-destructive text-center">{error}</p>
           )}
 
-          <DialogFooter className="sm:justify-end gap-3 pt-2">
+          <DialogFooter className="sm:justify-end gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
