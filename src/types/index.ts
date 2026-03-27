@@ -83,3 +83,4 @@ export type StatusConfig = {
   icon: string;
   allowedNext: DeliveryStatus[];
 };
+

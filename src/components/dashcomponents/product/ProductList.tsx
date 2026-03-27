@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, Package, RefreshCw } from "lucide-react";
 import ProductDialog from "./ProductCreateDialog";
-
+import DeliveryFromProductDialog from "../deliveries/kanban/DeliveryFromProductDialog";
 type Product = {
   id: number;
   name: string;
@@ -80,9 +80,6 @@ const fetchProducts = async () => {
     fetchProducts();
   };
 
-  // ──────────────────────────────────────────────
-  //  Affichage
-  // ──────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -185,15 +182,26 @@ const fetchProducts = async () => {
                 </div>
               </CardContent>
 
-              <CardFooter className="px-5 pt-1 pb-5 flex justify-between text-xs text-muted-foreground">
-                <div>
+              <CardFooter className="px-5 pt-1 pb-5 flex justify-between gap-3">
+                <div className="text-xs text-muted-foreground">
                   {new Date(product.createdAt).toLocaleDateString("fr-FR")}
                 </div>
-                <ProductDialog
-                  mode="edit"
-                  product={product}
-                  onSuccess={handleProductCreatedOrUpdated}
-                />
+
+                <div className="flex gap-2">
+                  {/* Bouton édition existant */}
+                  <ProductDialog
+                    mode="edit"
+                    product={product}
+                    onSuccess={handleProductCreatedOrUpdated}
+                  />
+
+                  {/* Nouveau bouton : Livrer ce produit */}
+                  <DeliveryFromProductDialog
+                    product={product}
+                    onSuccess={handleProductCreatedOrUpdated}
+                    disabled={product.stock != null && product.stock <= 0}   // ← Ajout ici
+                  />
+                </div>
               </CardFooter>
             </Card>
           ))}
