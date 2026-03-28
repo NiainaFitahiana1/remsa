@@ -44,6 +44,7 @@
     "jsonwebtoken": "^9.0.3",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.546.0",
+    "material-symbols": "^0.43.0",
     "mongoose": "^9.0.0",
     "next": "^15.5.7",
     "next-auth": "^4.24.13",

@@ -167,6 +167,10 @@ export default function Sidebar() {
               <span className="material-symbols-outlined">explore</span>
               <span>Tâches</span>
             </Link>
+            <Link href="/livreur/account" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/account') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
+              <span className="material-symbols-outlined">person</span>
+              <span>Account</span>
+            </Link>
           </>
         )}
       </nav>
