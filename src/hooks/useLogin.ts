@@ -89,7 +89,7 @@ export function useLogin() {
 
   return {
     login,
-    loading,
+    isLoading: loading,
     error,
     clearError: () => setError(null),
   };

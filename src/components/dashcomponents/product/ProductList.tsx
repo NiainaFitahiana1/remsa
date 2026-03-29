@@ -160,10 +160,6 @@ export default function ProductList() {
         <div className="flex gap-3">
           <ProductDialog 
             mode="create" 
-            onSuccess={() => {
-              handleProductCreatedOrUpdated();
-              toast.success("Produit créé avec succès");
-            }} 
           />
 
           {selectedProducts.length > 0 && (
@@ -194,10 +190,6 @@ export default function ProductList() {
           <div className="mt-6">
             <ProductDialog 
               mode="create" 
-              onSuccess={() => {
-                handleProductCreatedOrUpdated();
-                toast.success("Produit créé avec succès");
-              }} 
             />
           </div>
         </div>

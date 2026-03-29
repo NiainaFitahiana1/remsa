@@ -4,13 +4,11 @@ import type { Delivery } from "@/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
-interface DeliveryWithRelations extends Delivery {
+interface DeliveryWithRelations extends Omit<Delivery, "client" | "driver"> {
   client?: { id: number; nom: string; prenom: string } | null;
   driver?: { id: number; nom: string; prenom: string } | null;
   createdAt?: string;
-  status?: string;
 }
-
 async function getDelivery(id: string): Promise<DeliveryWithRelations | null> {
   const cookieStore = await cookies();           // ← Correction importante : await
   const token = cookieStore.get("token")?.value; // Change "token" si ton cookie a un autre nom

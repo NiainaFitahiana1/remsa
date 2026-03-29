@@ -23,6 +23,8 @@ import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import type { GeoapifyGeocoderAutocompleteOptions } from "@geoapify/react-geocoder-autocomplete";
+
 
 import type { DeliveryFormData } from "@/types";
 import {
@@ -98,38 +100,70 @@ export default function DeliveryCreateDialog({
       return;
     }
 
-    const fetchDistance = async () => {
-      const waypoints = `${coords.pickup.lat},${coords.pickup.lon}|${coords.drop.lat},${coords.drop.lon}`;
-      const url = `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=drive&apiKey=${GEOAPIFY_API_KEY}`;
+   const fetchDistance = async () => {
+    if (!coords?.pickup || !coords?.drop) {
+      console.warn("Coords incomplets :", coords);
+      return;
+    }
 
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { pickup, drop } = coords;
 
-        const data = await res.json();
+    const waypoints = `${pickup.lat},${pickup.lon}|${drop.lat},${drop.lon}`;
+    const url = `https://api.geoapify.com/v1/routing?waypoints=${waypoints}&mode=drive&apiKey=${GEOAPIFY_API_KEY}`;
 
-        // Structure typique : features[0].properties.distance (en mètres)
-        const route = data?.features?.[0]?.properties;
-        if (route?.distance) {
-          const distanceKm = (route.distance / 1000).toFixed(1);
-          setForm((prev) => ({ ...prev, distanceKm }));
-          console.log(`Distance calculée : ${distanceKm} km`);
-        } else {
-          console.warn("Pas de distance dans la réponse", data);
-        }
-      } catch (err) {
-        console.error("Erreur Geoapify Routing :", err);
-        // Optionnel : fallback haversine (à vol d'oiseau)
-        const dist = haversine(
-          coords.pickup.lat,
-          coords.pickup.lon,
-          coords.drop.lat,
-          coords.drop.lon
-        );
-        setForm((prev) => ({ ...prev, distanceKm: dist.toFixed(1) }));
+    try {
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
-    };
 
+      const data = await res.json();
+
+      const route = data?.features?.[0]?.properties;
+
+      if (route?.distance) {
+        const distanceKm = (route.distance / 1000).toFixed(1);
+
+        setForm((prev) => ({
+          ...prev,
+          distanceKm,
+        }));
+
+        console.log(`Distance calculée : ${distanceKm} km`);
+      } else {
+        console.warn("Pas de distance dans la réponse", data);
+
+        // 🔁 fallback direct si API ne renvoie rien
+        const dist = haversine(
+          pickup.lat,
+          pickup.lon,
+          drop.lat,
+          drop.lon
+        );
+
+        setForm((prev) => ({
+          ...prev,
+          distanceKm: dist.toFixed(1),
+        }));
+      }
+    } catch (err) {
+      console.error("Erreur Geoapify Routing :", err);
+
+      // 🔁 fallback si erreur réseau/API
+      const dist = haversine(
+        pickup.lat,
+        pickup.lon,
+        drop.lat,
+        drop.lon
+      );
+
+      setForm((prev) => ({
+        ...prev,
+        distanceKm: dist.toFixed(1),
+      }));
+    }
+  };
     fetchDistance();
   }, [coords.pickup, coords.drop, GEOAPIFY_API_KEY]);
 
@@ -228,40 +262,48 @@ export default function DeliveryCreateDialog({
             {/* Adresse de ramassage */}
             <div className="grid gap-2">
               <Label htmlFor="pickupAddress">Adresse de ramassage</Label>
-              <GeoapifyGeocoderAutocomplete
-                value={form.pickupAddress}
-                placeSelect={(val) => handlePlaceSelect(val, "pickupAddress")}
-                filterByCountryCode={["mg"]}
-                lang="fr"
-                placeholder="ex: Antananarivo, Analakely"
-                limit={7}
-                inputStyle={{
-                  width: "100%",
-                  padding: "0.5rem 0.75rem",
-                  border: "1px solid hsl(var(--input))",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                }}
-              />
+                <GeoapifyGeocoderAutocomplete
+                  {...({
+                    value: form.pickupAddress,
+                    placeSelect: (val: any) => handlePlaceSelect(val, "pickupAddress"),
+                    filterByCountryCode: ["mg"],
+                    lang: "fr",
+                    placeholder: "ex: Antananarivo, Analakely",
+                    limit: 7,
+                    inputProps: {
+                      style: {
+                        width: "100%",
+                        padding: "0.5rem 0.75rem",
+                        border: "1px solid hsl(var(--input))",
+                        borderRadius: "0.375rem",
+                        fontSize: "0.875rem",
+                      },
+                    },
+                  } as GeoapifyGeocoderAutocompleteOptions)}
+                />
             </div>
 
             {/* Adresse de livraison */}
             <div className="grid gap-2">
               <Label htmlFor="dropAddress">Adresse de livraison</Label>
               <GeoapifyGeocoderAutocomplete
-                value={form.dropAddress}
-                placeSelect={(val) => handlePlaceSelect(val, "dropAddress")}
-                filterByCountryCode={["mg"]}
-                lang="fr"
-                placeholder="ex: Toamasina, centre ville"
-                limit={7}
-                inputStyle={{
-                  width: "100%",
-                  padding: "0.5rem 0.75rem",
-                  border: "1px solid hsl(var(--input))",
-                  borderRadius: "0.375rem",
-                  fontSize: "0.875rem",
-                }}
+                {...({
+                  value: form.dropAddress,
+                  placeSelect: (val: any) => handlePlaceSelect(val, "dropAddress"),
+                  filterByCountryCode: ["mg"],
+                  lang: "fr",
+                  placeholder: "ex: Antananarivo, Analakely",
+                  limit: 7,
+                  inputProps: {
+                    style: {
+                      width: "100%",
+                      padding: "0.5rem 0.75rem",
+                      border: "1px solid hsl(var(--input))",
+                      borderRadius: "0.375rem",
+                      fontSize: "0.875rem",
+                    },
+                  },
+                } as GeoapifyGeocoderAutocompleteOptions)}
               />
             </div>
 

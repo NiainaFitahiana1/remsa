@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
-
 export async function getCurrentUser() {
-  const token = cookies().get("token")?.value;
+  const cookieStore = await cookies(); // <-- ajouter await
+  const token = cookieStore.get("token")?.value;
 
   if (!token) return null;
 

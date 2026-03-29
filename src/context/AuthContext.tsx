@@ -4,7 +4,7 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { destroyCookie, parseCookies } from 'nookies';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
 
 interface User {
   id: number;
@@ -134,7 +134,6 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
 
   const register = async (data: RegisterData) => {
     const res = await api.post('/register', data);
-    // After register, perhaps auto-login or redirect to login
     router.push('/login');
   };
 

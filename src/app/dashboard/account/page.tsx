@@ -108,6 +108,10 @@ export default function AccountPage() {
         payload.driverProfile = {
           vehicleType: profile.driverProfile.vehicleType,
           zone: profile.driverProfile.zone.trim(),
+          idCardPhoto: profile.driverProfile.idCardPhoto ?? null,
+          selfiePhoto: profile.driverProfile.selfiePhoto ?? null,
+          isApproved: profile.driverProfile.isApproved ?? false,
+          isPremium: profile.driverProfile.isPremium ?? false,
         };
       }
 
