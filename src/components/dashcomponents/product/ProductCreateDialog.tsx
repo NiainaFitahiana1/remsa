@@ -1,6 +1,5 @@
 "use client";
-
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,8 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
 import { Plus, Pencil } from "lucide-react";
+import { toast } from "sonner";   // ← Ajouté
 
 type ProductFormData = {
   name: string;
@@ -63,10 +62,22 @@ export default function ProductDialog({
 
   const [form, setForm] = useState<ProductFormData>(initialForm);
 
-  const resetForm = useCallback(() => {
-    setForm(initialForm);
-    setError(null);
-  }, [initialForm]);
+  // Réinitialiser le formulaire quand le produit change ou quand on ouvre/ferme
+  useEffect(() => {
+    if (open && isEdit && product) {
+      setForm({
+        name: product.name || "",
+        description: product.description || "",
+        price: product.price?.toString() || "",
+        imageUrl: product.imageUrl || "",
+        stock: product.stock?.toString() || "0",
+        isActive: product.isActive ?? true,
+      });
+    } else if (!open) {
+      setForm(initialForm);
+      setError(null);
+    }
+  }, [open, product, isEdit]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -96,7 +107,7 @@ export default function ProductDialog({
       return;
     }
 
-    const payload: any = {
+    const payload = {
       name: form.name.trim(),
       description: form.description.trim() || undefined,
       price: Number(form.price),
@@ -122,16 +133,19 @@ export default function ProductDialog({
         } else if (res.status === 403) {
           setError("Vous n'avez pas la permission d'effectuer cette action.");
         } else {
-          const err = await res.json();
+          const err = await res.json().catch(() => ({}));
           setError(err.message || "Une erreur est survenue");
         }
         return;
       }
 
       // Succès
+      const action = isEdit ? "modifié" : "créé";
+      toast.success(`Produit ${action} avec succès !`);
+
       setOpen(false);
       onSuccess?.();
-      resetForm();
+
     } catch (err: any) {
       setError(err.message || "Erreur réseau ou serveur");
       console.error("Erreur produit:", err);
@@ -146,10 +160,7 @@ export default function ProductDialog({
     : "Ajoutez un nouveau produit dans le catalogue.";
 
   return (
-    <Dialog open={open} onOpenChange={(o) => {
-      setOpen(o);
-      if (!o) resetForm();
-    }}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {isEdit ? (
           <Button variant="ghost" size="icon" title="Modifier">
@@ -215,7 +226,6 @@ export default function ProductDialog({
                 disabled={loading}
               />
             </div>
-
             <div className="grid gap-2">
               <Label htmlFor="stock">Stock disponible</Label>
               <Input
@@ -245,7 +255,13 @@ export default function ProductDialog({
             />
             {form.imageUrl && (
               <p className="text-xs text-muted-foreground mt-1">
-                Aperçu : <a href={form.imageUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                Aperçu :{" "}
+                <a
+                  href={form.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-primary"
+                >
                   ouvrir l'image
                 </a>
               </p>

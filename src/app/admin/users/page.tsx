@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Greeting from "@/components/dashcomponents/Greeting";
+import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
 import {
   Table,
@@ -21,75 +20,101 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MoreHorizontal, Eye, Edit, Trash2, UserCheck, UserX } from "lucide-react";
 
 export default function UserManagementPage() {
-  const { user, loading, error } = useCurrentUser();
+  const { user, loading: userLoading, error: userError } = useCurrentUser();
 
-  // Données simulées (à remplacer par un fetch réel avec TanStack Query ou SWR)
-  const [users] = useState([
-    {
-      id: 1,
-      nom: "Dupont",
-      prenom: "Jean",
-      identifiant: "JDUPONT",
-      email: "jean.dupont@email.com",
-      telephone: "+225 07 01 23 45 67",
-      genre: "Homme",
-      role: "DRIVER",
-      isActive: true,
-      isVerified: true,
-      rating: 4.8,
-      driverProfile: {
-        vehicleType: "MOTO",
-        zone: "Abidjan Plateau",
-        isApproved: true,
-        isPremium: true,
-      },
-    },
-    {
-      id: 2,
-      nom: "Konaté",
-      prenom: "Aïcha",
-      identifiant: "AKONATE",
-      email: "aicha.konate@email.com",
-      telephone: "+225 05 08 99 88 77",
-      genre: "Femme",
-      role: "CLIENT",
-      isActive: true,
-      isVerified: true,
-      rating: 4.9,
-      driverProfile: null,
-    },
-    {
-      id: 3,
-      nom: "Traoré",
-      prenom: "Mohamed",
-      identifiant: "MTRAORE",
-      email: null,
-      telephone: "+225 01 02 34 56 78",
-      genre: "Homme",
-      role: "DRIVER",
-      isActive: false,
-      isVerified: false,
-      rating: 3.2,
-      driverProfile: {
-        vehicleType: "VOITURE",
-        zone: "Yopougon",
-        isApproved: false,
-        isPremium: false,
-      },
-    },
-    // Ajoute d'autres utilisateurs ici...
-  ]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"all" | "client" | "driver">("all");
 
-  const handleAction = (action: string, userId: number) => {
-    console.log(`Action "${action}" sur l'utilisateur ID: ${userId}`);
-    // Ici tu mettras tes mutations (suspendre, supprimer, approuver, etc.)
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/users/all", {
+        credentials: "include",
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) throw new Error("Session expirée. Veuillez vous reconnecter.");
+        if (res.status === 403) throw new Error("Vous n'avez pas les droits d'accès à cette page.");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Erreur lors du chargement des utilisateurs");
+      }
+
+      const data = await res.json();
+      setUsers(Array.isArray(data) ? data : data.data || []);
+    } catch (err: any) {
+      setError(err.message || "Erreur inattendue");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div className="p-6">Chargement...</div>;
-  if (error || !user) return <div className="p-6">Vous devez être connecté</div>;
+  useEffect(() => {
+    if (user) {
+      fetchUsers();
+    }
+  }, [user]);
+
+  const filteredUsers = users.filter((u) => {
+    if (activeTab === "client") return u.role?.name === "CLIENT" || u.role === "CLIENT";
+    if (activeTab === "driver") return u.role?.name === "DRIVER" || u.role === "DRIVER";
+    return true;
+  });
+
+  const handleAction = async (action: string, userId: number) => {
+    if (action === "toggleActive") {
+      const currentUser = users.find(u => u.id === userId);
+      if (!currentUser) return;
+
+      if (!confirm(`Voulez-vous vraiment ${currentUser.isActive ? "désactiver" : "activer"} cet utilisateur ?`)) return;
+
+      try {
+        const res = await fetch(`/api/users/${userId}/status`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !currentUser.isActive }),
+        });
+
+        if (res.ok) {
+          alert("Statut mis à jour avec succès");
+          fetchUsers();
+        } else {
+          const err = await res.json();
+          alert(err.message || "Erreur lors du changement de statut");
+        }
+      } catch (err) {
+        alert("Erreur de connexion");
+      }
+    } 
+    else if (action === "approve") {
+      alert(`Approbation du chauffeur ID ${userId} (fonctionnalité à implémenter)`);
+      fetchUsers();
+    } 
+    else if (action === "delete") {
+      if (!confirm("Supprimer cet utilisateur ? Cette action est irréversible.")) return;
+      alert(`Suppression de l'utilisateur ID ${userId} (fonctionnalité à implémenter)`);
+      fetchUsers();
+    } 
+    else {
+      console.log(`Action "${action}" sur l'utilisateur ID: ${userId}`);
+    }
+  };
+
+  if (userLoading) return <div className="p-6">Chargement de l'utilisateur...</div>;
+  if (userError || !user) return <div className="p-6 text-red-600">Vous devez être connecté en tant qu'administrateur.</div>;
 
   return (
     <>
@@ -99,129 +124,151 @@ export default function UserManagementPage() {
           <Button>Ajouter un utilisateur</Button>
         </div>
 
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Utilisateur</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Rating</TableHead>
-                {users.some(u => u.role === "DRIVER") && <TableHead>Profil Driver</TableHead>}
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell>
-                    <div className="font-medium">
-                      {u.prenom} {u.nom}
-                    </div>
-                    <div className="text-sm text-gray-500">#{u.identifiant}</div>
-                  </TableCell>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | "client" | "driver")}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="all">Tous les utilisateurs</TabsTrigger>
+            <TabsTrigger value="client">Clients</TabsTrigger>
+            <TabsTrigger value="driver">Chauffeurs</TabsTrigger>
+          </TabsList>
 
-                  <TableCell>
-                    <div>{u.email || "—"}</div>
-                    <div className="text-sm text-gray-500">{u.telephone}</div>
-                  </TableCell>
+          <TabsContent value={activeTab}>
+            <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+              {loading ? (
+                <div className="p-8 text-center">Chargement des utilisateurs...</div>
+              ) : error ? (
+                <div className="p-8 text-center text-red-600">{error}</div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">Aucun utilisateur trouvé</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Utilisateur</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Rôle</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Profil Driver</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((u) => {
+                      const roleName = u.role?.name || u.role;
+                      const driverProfile = u.driverProfile;
 
-                  <TableCell>
-                    <Badge variant={u.role === "DRIVER" ? "default" : "secondary"}>
-                      {u.role === "DRIVER" ? "Chauffeur" : "Client"}
-                    </Badge>
-                  </TableCell>
+                      return (
+                        <TableRow key={u.id}>
+                          <TableCell>
+                            <div className="font-medium">
+                              {u.prenom} {u.nom}
+                            </div>
+                            <div className="text-sm text-gray-500">#{u.identifiant}</div>
+                          </TableCell>
 
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {u.isActive ? (
-                        <Badge className="flex items-center gap-1">
-                          <UserCheck className="w-3 h-3" /> Actif
-                        </Badge>
-                      ) : (
-                        <Badge variant="destructive" className="flex items-center gap-1">
-                          <UserX className="w-3 h-3" /> Inactif
-                        </Badge>
-                      )}
-                      {u.isVerified && (
-                        <Badge variant="outline">Vérifié</Badge>
-                      )}
-                    </div>
-                  </TableCell>
+                          <TableCell>
+                            <div>{u.email || "—"}</div>
+                            <div className="text-sm text-gray-500">{u.telephone}</div>
+                          </TableCell>
 
-                  <TableCell>
-                    <div className="font-medium">{u.rating.toFixed(1)} ★</div>
-                  </TableCell>
+                          <TableCell>
+                            <Badge variant={roleName === "DRIVER" ? "default" : "secondary"}>
+                              {roleName === "DRIVER" ? "Chauffeur" : "Client"}
+                            </Badge>
+                          </TableCell>
 
-                  {u.driverProfile && (
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{u.driverProfile.vehicleType}</div>
-                        <div className="text-gray-500">{u.driverProfile.zone}</div>
-                        {u.driverProfile.isPremium && (
-                          <Badge className="mt-1">Premium</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  )}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {u.isActive ? (
+                                <Badge className="flex items-center gap-1 bg-green-100 text-green-700">
+                                  <UserCheck className="w-3 h-3" /> Actif
+                                </Badge>
+                              ) : (
+                                <Badge variant="destructive" className="flex items-center gap-1">
+                                  <UserX className="w-3 h-3" /> Inactif
+                                </Badge>
+                              )}
+                              {u.isVerified && <Badge variant="outline">Vérifié</Badge>}
+                            </div>
+                          </TableCell>
 
-                  {!u.driverProfile && <TableCell className="text-gray-400">—</TableCell>}
+                          <TableCell>
+                            <div className="font-medium">{u.rating?.toFixed(1) || "—"} ★</div>
+                          </TableCell>
 
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
+                          <TableCell>
+                            {driverProfile ? (
+                              <div className="text-sm">
+                                <div className="font-medium">{driverProfile.vehicleType}</div>
+                                <div className="text-gray-500">{driverProfile.zone}</div>
+                                {driverProfile.isApproved && (
+                                  <Badge variant="outline" className="mt-1 text-emerald-600">Approuvé</Badge>
+                                )}
+                                {driverProfile.isPremium && (
+                                  <Badge className="mt-1">Premium</Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">—</span>
+                            )}
+                          </TableCell>
 
-                        <DropdownMenuItem onClick={() => handleAction("view", u.id)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Voir le profil
-                        </DropdownMenuItem>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-5 w-5" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-56">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
 
-                        <DropdownMenuItem onClick={() => handleAction("edit", u.id)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Modifier
-                        </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleAction("view", u.id)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Voir le profil
+                                </DropdownMenuItem>
 
-                        {u.role === "DRIVER" && !u.driverProfile?.isApproved && (
-                          <DropdownMenuItem
-                            onClick={() => handleAction("approve", u.id)}
-                            className="text-emerald-600"
-                          >
-                            <UserCheck className="mr-2 h-4 w-4" />
-                            Approuver le chauffeur
-                          </DropdownMenuItem>
-                        )}
+                                <DropdownMenuItem onClick={() => handleAction("edit", u.id)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Modifier
+                                </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={() => handleAction("toggleActive", u.id)}
-                        >
-                          {u.isActive ? "Désactiver" : "Activer"} le compte
-                        </DropdownMenuItem>
+                                {roleName === "DRIVER" && driverProfile && !driverProfile.isApproved && (
+                                  <DropdownMenuItem
+                                    onClick={() => handleAction("approve", u.id)}
+                                    className="text-emerald-600"
+                                  >
+                                    <UserCheck className="mr-2 h-4 w-4" />
+                                    Approuver le chauffeur
+                                  </DropdownMenuItem>
+                                )}
 
-                        <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleAction("toggleActive", u.id)}>
+                                  {u.isActive ? "Désactiver" : "Activer"} le compte
+                                </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={() => handleAction("delete", u.id)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                                <DropdownMenuSeparator />
+
+                                <DropdownMenuItem
+                                  onClick={() => handleAction("delete", u.id)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Supprimer
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );

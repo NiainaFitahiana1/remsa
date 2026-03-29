@@ -4,6 +4,36 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCurrentUser } from '@/lib/auth/use-current-user';
 
+const menuLinks = {
+  CLIENT: [
+    { href: '/dashboard', icon: 'home', label: 'Home' },
+    { href: '/dashboard/product', icon: 'inventory_2', label: 'Products' },
+    { href: '/dashboard/tasks', icon: 'explore', label: 'Tasks' },
+    { href: '/dashboard/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/dashboard/account', icon: 'person', label: 'Account' },
+  ],
+  ADMIN: [
+    { href: '/admin', icon: 'dashboard', label: 'Dashboard' },
+    { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
+    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
+    { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/admin/account', icon: 'person', label: 'Compte' },
+  ],
+  SUPER_ADMIN: [
+    { href: '/admin', icon: 'dashboard', label: 'Dashboard' },
+    { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
+    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
+    { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/admin/account', icon: 'person', label: 'Compte' },
+  ],
+  DRIVER: [
+    { href: '/livreur', icon: 'home', label: 'Accueil' },
+    { href: '/livreur/deliveries', icon: 'local_shipping', label: 'Livraisons' },
+    { href: '/livreur/tasks', icon: 'explore', label: 'Tâches' },
+    { href: '/livreur/account', icon: 'person', label: 'Compte' },
+  ],
+};
+
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { user, loading } = useCurrentUser();
@@ -17,201 +47,27 @@ export default function MobileBottomNav() {
 
   if (loading || !user) return null;
 
-  const role = user.role.toUpperCase();
+  const role = user.role.toUpperCase() as keyof typeof menuLinks;
+  const links = menuLinks[role] || [];
 
   return (
-    <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-border px-4 py-3 flex justify-between items-center z-50">
-      {role === 'CLIENT' && (
-        <>
-          <Link
-            href="/dashboard"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/dashboard')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">home</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Home</span>
-          </Link>
-
-          <Link
-            href="/dashboard/product"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/dashboard/product')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">inventory_2</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Products</span>
-          </Link>
-
-          <Link
-            href="/dashboard/tasks"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/dashboard/tasks')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">explore</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Tasks</span>
-          </Link>
-
-          <Link
-            href="/dashboard/stats"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/dashboard/stats')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">analytics</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Stats</span>
-          </Link>
-
-          <Link
-            href="/dashboard/account"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/dashboard/account')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">person</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Account</span>
-          </Link>
-        </>
-      )}
-
-      {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
-        <>
-          <Link
-            href="/admin"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/admin')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">dashboard</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Dashboard</span>
-          </Link>
-
-          <Link
-            href="/admin/users"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/admin/users')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">group</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Utilisateurs</span>
-          </Link>
-
-          <Link
-            href="/admin/orders"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/admin/orders')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">shopping_cart</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Commandes</span>
-          </Link>
-
-          <Link
-            href="/admin/stats"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/admin/stats')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">analytics</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Stats</span>
-          </Link>
-
-          <Link
-            href="/admin/account"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/admin/account')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">person</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Compte</span>
-          </Link>
-        </>
-      )}
-
-      {role === 'DRIVER' && (
-        <>
-          <Link
-            href="/livreur"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/livreur')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">home</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Accueil</span>
-          </Link>
-
-          <Link
-            href="/livreur/deliveries"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/livreur/deliveries')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">local_shipping</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Livraisons</span>
-          </Link>
-
-          <Link
-            href="/livreur/tasks"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/livreur/tasks')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">explore</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Tâches</span>
-          </Link>
-
-          <Link
-            href="/livreur/stats"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/livreur/stats')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">analytics</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Stats</span>
-          </Link>
-
-          <Link
-            href="/livreur/account"
-            className={`flex flex-col items-center gap-1 transition ${
-              isActive('/livreur/account')
-                ? 'text-secondary'
-                : 'text-muted-foreground hover:text-secondary'
-            }`}
-          >
-            <span className="material-symbols-outlined text-2xl">person</span>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Compte</span>
-          </Link>
-        </>
-      )}
+    <footer className="lg:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-border px-4 py-2 flex justify-around items-center z-50">
+      {links.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className={`flex flex-col items-center gap-1 transition py-1 px-2 rounded-md ${
+            isActive(link.href)
+              ? 'text-secondary'
+              : 'text-muted-foreground hover:text-secondary'
+          }`}
+        >
+          <span className="material-symbols-outlined text-2xl">{link.icon}</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">
+            {link.label}
+          </span>
+        </Link>
+      ))}
     </footer>
   );
 }

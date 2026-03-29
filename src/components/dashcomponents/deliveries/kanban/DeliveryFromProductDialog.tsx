@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
@@ -19,16 +18,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, Package, MapPin } from "lucide-react";
+import { CalendarIcon, Package, MapPin, Truck } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-
 import {
   GeoapifyGeocoderAutocomplete,
   GeoapifyContext,
 } from "@geoapify/react-geocoder-autocomplete";
 import "@geoapify/geocoder-autocomplete/styles/minimal.css";
+import { toast } from "sonner";
 
 type Product = {
   id: number;
@@ -39,15 +38,19 @@ type Product = {
 };
 
 type DeliveryFromProductDialogProps = {
-  product: Product;
+  product?: Product;
+  products?: Product[];
   onSuccess?: () => void;
   disabled?: boolean;
+  children?: React.ReactNode;
 };
 
 export default function DeliveryFromProductDialog({
   product,
+  products = [],
   onSuccess,
   disabled = false,
+  children,
 }: DeliveryFromProductDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,8 +64,10 @@ export default function DeliveryFromProductDialog({
     dropAddress: "",
     distanceKm: "",
     price: "",
-    quantity: 1,
   });
+
+  // Quantités par produit (clé = product.id)
+  const [quantities, setQuantities] = useState<Record<number, number>>({});
 
   const [coords, setCoords] = useState<{
     pickup?: { lat: number; lon: number };
@@ -71,12 +76,37 @@ export default function DeliveryFromProductDialog({
 
   const GEOAPIFY_API_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
 
-  // Suggestion de prix
+  // Liste des produits à livrer
+  const itemsToDeliver = products.length > 0 ? products : product ? [product] : [];
+
+  // Initialiser les quantités à 1 pour chaque produit quand le dialog s'ouvre
+  useEffect(() => {
+    if (open && itemsToDeliver.length > 0) {
+      const initialQuantities: Record<number, number> = {};
+      itemsToDeliver.forEach((p) => {
+        initialQuantities[p.id] = 1;
+      });
+      setQuantities(initialQuantities);
+    }
+  }, [open, itemsToDeliver]);
+
+  // Calcul du prix total dynamique
+  const totalPrice = useMemo(() => {
+    return itemsToDeliver.reduce((sum, product) => {
+      const qty = quantities[product.id] || 1;
+      return sum + product.price * qty;
+    }, 0);
+  }, [itemsToDeliver, quantities]);
+
   const suggestedTotalPrice = useMemo(() => {
-    const productTotal = product.price * form.quantity;
     const deliveryFee = 5.0;
-    return (productTotal + deliveryFee).toFixed(2);
-  }, [product.price, form.quantity]);
+    return (totalPrice + deliveryFee).toFixed(2);
+  }, [totalPrice]);
+
+  const handleQuantityChange = (productId: number, value: string) => {
+    const numValue = Math.max(1, Number(value) || 1);
+    setQuantities((prev) => ({ ...prev, [productId]: numValue }));
+  };
 
   const handleManualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -94,15 +124,13 @@ export default function DeliveryFromProductDialog({
     }
   };
 
-  // === NOUVEAU : Utiliser la position actuelle ===
   const useCurrentLocation = async () => {
     if (!navigator.geolocation) {
-      alert("La géolocalisation n'est pas supportée par votre navigateur.");
+      toast.error("La géolocalisation n'est pas supportée par votre navigateur.");
       return;
     }
 
     setIsGettingLocation(true);
-
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -113,43 +141,28 @@ export default function DeliveryFromProductDialog({
       });
 
       const { latitude: lat, longitude: lon } = position.coords;
-
-      // Reverse geocoding avec Geoapify
       const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lon}&lang=fr&apiKey=${GEOAPIFY_API_KEY}`;
-
       const res = await fetch(url);
       const data = await res.json();
-
       const feature = data.features?.[0];
+
       if (feature?.properties?.formatted) {
-        const address = feature.properties.formatted;
-
-        setForm((prev) => ({ ...prev, pickupAddress: address }));
-
-        setCoords((prev) => ({
-          ...prev,
-          pickup: { lat, lon },
-        }));
+        setForm((prev) => ({ ...prev, pickupAddress: feature.properties.formatted }));
+        setCoords((prev) => ({ ...prev, pickup: { lat, lon } }));
+        toast.success("Position actuelle récupérée");
       } else {
-        alert("Impossible d'obtenir une adresse à partir de votre position.");
+        toast.error("Impossible d'obtenir l'adresse.");
       }
     } catch (err: any) {
-      console.error("Erreur géolocalisation :", err);
-      if (err.code === 1) {
-        alert("Vous avez refusé l'accès à la localisation.");
-      } else if (err.code === 2) {
-        alert("Position actuelle indisponible.");
-      } else if (err.code === 3) {
-        alert("Délai d'attente dépassé.");
-      } else {
-        alert("Erreur lors de la récupération de votre position.");
-      }
+      console.error(err);
+      if (err.code === 1) toast.error("Accès à la localisation refusé.");
+      else toast.error("Erreur lors de la récupération de la position.");
     } finally {
       setIsGettingLocation(false);
     }
   };
 
-  // Calcul automatique de la distance
+  // Calcul de la distance (inchangé)
   useEffect(() => {
     if (!coords.pickup || !coords.drop || !GEOAPIFY_API_KEY) return;
 
@@ -183,14 +196,26 @@ export default function DeliveryFromProductDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!form.pickupAddress || !form.dropAddress) {
-      alert("Veuillez remplir les adresses de ramassage et de livraison.");
+      toast.error("Veuillez remplir les adresses de ramassage et de livraison.");
+      return;
+    }
+
+    if (itemsToDeliver.length === 0) {
+      toast.error("Aucun produit sélectionné.");
       return;
     }
 
     setLoading(true);
 
     try {
+      // Préparer les items avec leurs quantités respectives
+      const deliveryItems = itemsToDeliver.map((p) => ({
+        productId: p.id,
+        quantity: quantities[p.id] || 1,
+      }));
+
       const res = await fetch("/api/deliveries", {
         method: "POST",
         credentials: "include",
@@ -199,105 +224,122 @@ export default function DeliveryFromProductDialog({
           pickupAddress: form.pickupAddress.trim(),
           dropAddress: form.dropAddress.trim(),
           distanceKm: form.distanceKm ? Number(form.distanceKm) : undefined,
-          price: Number(form.price) || Number(suggestedTotalPrice),
+          price: form.price ? Number(form.price) : undefined,   // optionnel
           scheduledAt: scheduledAt,
-          items: [
-            {
-              productId: product.id,
-              quantity: Number(form.quantity),
-            },
-          ],
+          items: deliveryItems,
         }),
       });
 
       if (!res.ok) {
         const errorText = await res.text();
-        throw new Error(errorText || "Erreur lors de la création");
+        throw new Error(errorText || "Erreur lors de la création de la livraison");
       }
 
-      // Reset
-      setForm({ pickupAddress: "", dropAddress: "", distanceKm: "", price: "", quantity: 1 });
+      toast.success(
+        `Livraison créée avec succès pour ${itemsToDeliver.length} produit${itemsToDeliver.length > 1 ? "s" : ""} !`
+      );
+
+      // Reset du formulaire
+      setForm({ pickupAddress: "", dropAddress: "", distanceKm: "", price: "" });
+      setQuantities({});
       setCoords({});
       setSelectedDate(undefined);
       setSelectedTime("");
       setOpen(false);
 
       onSuccess?.();
-      alert("Livraison créée avec succès !");
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Échec de la création de la livraison");
+      toast.error(err.message || "Échec de la création de la livraison");
     } finally {
       setLoading(false);
     }
   };
 
+  if (itemsToDeliver.length === 0) return null;
+
+  const isMultiple = itemsToDeliver.length > 1;
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="default"
-          size="sm"
-          disabled={disabled}
-          className={cn(disabled && "opacity-50 cursor-not-allowed")}
-        >
-          <Package className="mr-2 h-4 w-4" />
-          Livrer
-        </Button>
+        {children || (
+          <Button variant="default" size="sm" disabled={disabled}>
+            <Package className="mr-2 h-4 w-4" />
+            Livrer
+          </Button>
+        )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-[460px] md:max-w-2xl max-h-[95vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[480px] md:max-w-2xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <Package className="h-5 w-5" />
-            Livraison pour : {product.name}
+            <Truck className="h-5 w-5" />
+            {isMultiple ? `Livraison multiple (${itemsToDeliver.length} produits)` : `Livraison pour : ${itemsToDeliver[0].name}`}
           </DialogTitle>
           <DialogDescription>
-            Créez une livraison contenant ce produit.
+            Configurez les quantités et les détails de la livraison.
           </DialogDescription>
         </DialogHeader>
 
         <GeoapifyContext apiKey={GEOAPIFY_API_KEY}>
           <form onSubmit={handleSubmit} className="space-y-6 py-4">
-            {/* Info produit */}
-            <div className="flex gap-4 p-4 bg-muted/50 rounded-lg">
-              {product.imageUrl && (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="w-16 h-16 object-cover rounded"
-                />
-              )}
-              <div>
-                <p className="font-medium">{product.name}</p>
-                <p className="text-lg font-bold text-primary">
-                  {product.price.toFixed(2)} € × {form.quantity} ={" "}
-                  {(product.price * form.quantity).toFixed(2)} €
-                </p>
-                {product.stock && (
-                  <p className="text-xs text-muted-foreground">
-                    Stock disponible : {product.stock}
-                  </p>
-                )}
+            {/* Liste des produits avec quantité individuelle */}
+            <div className="space-y-4">
+              {itemsToDeliver.map((p) => (
+                <div key={p.id} className="flex gap-4 p-4 bg-muted/50 rounded-lg items-center">
+                  {p.imageUrl && (
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      className="w-16 h-16 object-cover rounded"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{p.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {p.price.toFixed(2)} € / unité
+                    </p>
+                  </div>
+
+                  <div className="w-32">
+                    <Label htmlFor={`qty-${p.id}`} className="text-xs">Quantité</Label>
+                    <Input
+                      id={`qty-${p.id}`}
+                      type="number"
+                      min={1}
+                      max={p.stock || 999}
+                      value={quantities[p.id] || 1}
+                      onChange={(e) => handleQuantityChange(p.id, e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div className="text-right w-24">
+                    <p className="font-semibold text-sm">
+                      {(p.price * (quantities[p.id] || 1)).toFixed(2)} €
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Prix total */}
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Total produits :</span>
+                <span>{totalPrice.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-sm text-muted-foreground mt-1">
+                <span>Frais de livraison estimés :</span>
+                <span>5.00 €</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
+                <span>Total livraison :</span>
+                <span>{suggestedTotalPrice} €</span>
               </div>
             </div>
 
-            {/* Quantité */}
-            <div className="grid gap-2">
-              <Label htmlFor="quantity">Quantité</Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                min={1}
-                max={product.stock || 999}
-                value={form.quantity}
-                onChange={handleManualChange}
-                required
-              />
-            </div>
-
-            {/* Adresse de ramassage avec bouton position actuelle */}
+            {/* Adresse de ramassage */}
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <Label>Adresse de ramassage (Pickup)</Label>
@@ -307,13 +349,11 @@ export default function DeliveryFromProductDialog({
                   size="sm"
                   onClick={useCurrentLocation}
                   disabled={isGettingLocation}
-                  className="flex items-center gap-1.5 text-xs h-8"
                 >
-                  <MapPin className="h-4 w-4" />
-                  {isGettingLocation ? "Localisation..." : "Ma position actuelle"}
+                  <MapPin className="mr-1 h-4 w-4" />
+                  Ma position
                 </Button>
               </div>
-
               <GeoapifyGeocoderAutocomplete
                 value={form.pickupAddress}
                 placeSelect={(val) => handlePlaceSelect(val, "pickupAddress")}
@@ -335,7 +375,7 @@ export default function DeliveryFromProductDialog({
               />
             </div>
 
-            {/* Distance + Prix */}
+            {/* Distance + Prix personnalisé */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label>Distance (km)</Label>
@@ -348,7 +388,6 @@ export default function DeliveryFromProductDialog({
                   placeholder="Calcul automatique"
                 />
               </div>
-
               <div className="grid gap-2">
                 <Label>Prix total de la livraison (€)</Label>
                 <Input
@@ -357,11 +396,7 @@ export default function DeliveryFromProductDialog({
                   step="0.01"
                   value={form.price || suggestedTotalPrice}
                   onChange={handleManualChange}
-                  placeholder={suggestedTotalPrice}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Suggestion : {suggestedTotalPrice} € (produit + frais)
-                </p>
               </div>
             </div>
 
@@ -392,7 +427,6 @@ export default function DeliveryFromProductDialog({
                   </PopoverContent>
                 </Popover>
               </div>
-
               <div className="grid gap-2">
                 <Label>Heure prévue</Label>
                 <Input

@@ -2,6 +2,8 @@ import type { Delivery } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SendDeliveryRequestModal } from "../modal/SendDeliveryRequestModal";
+import Link from "next/link";
+
 type DeliveryCardProps = {
   delivery: Delivery;
   isBeingDragged: boolean;
@@ -15,6 +17,10 @@ export function DeliveryCard({
 }: DeliveryCardProps) {
   const shortPickup = delivery.pickupAddress.split(",")[0];
   const shortDrop = delivery.dropAddress.split(",")[0];
+
+  const deliverySlug = `${shortPickup.toLowerCase()}-to-${shortDrop.toLowerCase()}`
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 
   return (
     <div
@@ -50,11 +56,20 @@ export function DeliveryCard({
         </div>
       </div>
 
-      {/* Bouton d'action : Envoyer aux livreurs */}
-      <div className="pt-2 border-t">
+      {/* Section Actions */}
+      <div className="pt-2 border-t flex flex-col gap-3">
+        {/* Lien vers les détails */}
+        <Link
+          href={`/dashboard/tasks/${delivery.id}`} 
+          className="text-sm text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 transition-colors"
+        >
+          Voir les détails
+        </Link>
+
+        {/* Bouton Envoyer aux livreurs */}
         <SendDeliveryRequestModal delivery={delivery}>
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             className="w-full gap-2"
             variant="default"
           >

@@ -13,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
 import { Button } from "@/components/ui/button";
 
 type UserProfile = {
@@ -21,6 +20,37 @@ type UserProfile = {
   nom: string;
   prenom: string;
   role: string;
+};
+
+// Définition des liens par rôle
+const menuLinks = {
+  CLIENT: [
+    { href: '/dashboard', icon: 'home', label: 'Home' },
+    { href: '/dashboard/product', icon: 'inventory_2', label: 'Products' },
+    { href: '/dashboard/tasks', icon: 'explore', label: 'Tasks' },
+    { href: '/dashboard/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/dashboard/account', icon: 'person', label: 'Account' },
+  ],
+  ADMIN: [
+    { href: '/admin', icon: 'dashboard', label: 'Dashboard Admin' },
+    { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
+    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
+    { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/admin/account', icon: 'person', label: 'Compte' },
+  ],
+  SUPER_ADMIN: [
+    { href: '/admin', icon: 'dashboard', label: 'Dashboard Admin' },
+    { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
+    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
+    { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/admin/account', icon: 'person', label: 'Compte' },
+  ],
+  DRIVER: [
+    { href: '/livreur', icon: 'home', label: 'Accueil' },
+    { href: '/livreur/livraisons', icon: 'local_shipping', label: 'Livraisons' },
+    { href: '/livreur/requests', icon: 'explore', label: 'Tâches' },
+    { href: '/livreur/account', icon: 'person', label: 'Compte' },
+  ],
 };
 
 export default function Sidebar() {
@@ -68,9 +98,7 @@ export default function Sidebar() {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
-  };
+  const handleLogoutClick = () => setShowLogoutConfirm(true);
 
   const confirmLogout = async () => {
     setShowLogoutConfirm(false);
@@ -93,10 +121,12 @@ export default function Sidebar() {
     );
   }
 
-  const role = profile.role.toUpperCase();
+  const role = profile.role.toUpperCase() as keyof typeof menuLinks;
+  const links = menuLinks[role] || [];
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:bg-white lg:border-r lg:border-border lg:z-50 lg:overflow-y-auto">
+      {/* Header Profil */}
       <div className="p-5 border-b border-border">
         <div className="flex items-center gap-3">
           <div
@@ -106,7 +136,9 @@ export default function Sidebar() {
             }}
           />
           <div>
-            <p className="font-bold text-secondary text-lg">{profile.nom} {profile.prenom}</p>
+            <p className="font-bold text-secondary text-lg">
+              {profile.nom} {profile.prenom}
+            </p>
             <span className="bg-secondary text-primary-foreground text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wider">
               {role}
             </span>
@@ -114,67 +146,25 @@ export default function Sidebar() {
         </div>
       </div>
 
+      {/* Navigation dynamique */}
       <nav className="flex-1 px-3 py-6 flex flex-col gap-1.5">
-        {role === 'CLIENT' && (
-          <>
-            <Link href="/dashboard" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">home</span>
-              <span>Home</span>
-            </Link>
-            <Link href="/dashboard/product" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/product') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">inventory_2</span>
-              <span>Products</span>
-            </Link>
-            <Link href="/dashboard/tasks" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/tasks') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">explore</span>
-              <span>Tasks</span>
-            </Link>
-            <Link href="/dashboard/stats" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/stats') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">analytics</span>
-              <span>Stats</span>
-            </Link>
-            <Link href="/dashboard/account" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/account') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">person</span>
-              <span>Account</span>
-            </Link>
-          </>
-        )}
-
-        {(role === 'ADMIN' || role === 'SUPER_ADMIN') && (
-          <>
-            <Link href="/admin" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/admin') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">dashboard</span>
-              <span>Dashboard Admin</span>
-            </Link>
-            <Link href="/admin/users" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/admin/users') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">group</span>
-              <span>Utilisateurs</span>
-            </Link>
-          </>
-        )}
-
-        {role === 'DRIVER' && (
-          <>
-            <Link href="/livreur" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/livreur') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">home</span>
-              <span>Accueil</span>
-            </Link>
-            <Link href="/livreur/requests" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/livreur/deliveries') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">local_shipping</span>
-              <span>Mes Livraisons</span>
-            </Link>
-            <Link href="/livreur/tasks" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/livreur/tasks') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">explore</span>
-              <span>Tâches</span>
-            </Link>
-            <Link href="/livreur/account" className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${isActive('/dashboard/account') ? 'bg-secondary/10 text-secondary' : 'text-muted-foreground hover:bg-muted hover:text-secondary'}`}>
-              <span className="material-symbols-outlined">person</span>
-              <span>Account</span>
-            </Link>
-          </>
-        )}
+        {links.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium transition ${
+              isActive(link.href)
+                ? 'bg-secondary/10 text-secondary'
+                : 'text-muted-foreground hover:bg-muted hover:text-secondary'
+            }`}
+          >
+            <span className="material-symbols-outlined">{link.icon}</span>
+            <span>{link.label}</span>
+          </Link>
+        ))}
       </nav>
 
+      {/* Bouton Déconnexion */}
       <div className="p-5 border-t border-border mt-auto">
         <button
           onClick={handleLogoutClick}
@@ -186,6 +176,7 @@ export default function Sidebar() {
         </button>
       </div>
 
+      {/* Dialog de confirmation */}
       <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <DialogContent>
           <DialogHeader>

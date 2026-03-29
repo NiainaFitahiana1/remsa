@@ -39,10 +39,10 @@ export default function Breadcrumb() {
   const fullCrumbs = [homeCrumb, ...crumbs];
 
   return (
-    <nav aria-label="Breadcrumb" className="">
-      <ol className="flex items-center flex-wrap gap-2 text-sm">
+    <nav aria-label="Breadcrumb">
+      <ol className="flex items-center flex-wrap text-sm">
         {fullCrumbs.map((crumb, index) => (
-          <li key={crumb.href} className="flex items-center gap-2">
+          <li key={crumb.href} className="flex items-center gap-2 bg-background p-2">
             {index > 0 && (
               <span className="text-gray-400 material-symbols-outlined text-base">
                 chevron_right
@@ -54,7 +54,7 @@ export default function Breadcrumb() {
             ) : (
               <Link
                 href={crumb.href}
-                className="text-gray-500 hover:text-primary transition-colors"
+                className="text-gray-500 hover:text-primary font-medium transition-colors"
               >
                 {crumb.label}
               </Link>
