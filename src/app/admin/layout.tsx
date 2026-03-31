@@ -43,7 +43,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </button>
 
         <main className="flex-1 pb-10 lg:pb-6">
-          <div className="max-w-7xl mx-auto bg-slate-200 px-4 sm:px-6 lg:px-8 py-6 lg:py-5 bg-transparent sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto bg-slate-200 px-4 sm:px-6 lg:px-8 py-6 lg:py-4 bg-transparent sticky top-0 z-10">
             <Breadcrumb />
           </div>
 

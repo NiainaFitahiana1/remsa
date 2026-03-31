@@ -6,14 +6,69 @@ import UrgentRequestCard from "@/components/dashcomponents/UrgentRequestCard";
 import PremiumGuide from "@/components/dashcomponents/PremiumGuide";
 import PlatformUpdateItem from "@/components/dashcomponents/PlatformUpdateItem";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { useState, useEffect } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+import { TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
+  const { user, loading, error } = useCurrentUser();
 
- const { user, loading, error } = useCurrentUser();
+  // Statistiques (adaptées à une plateforme livraison freelance)
+  const [stats, setStats] = useState({
+    inscriptionsToday: 47,
+    totalUsers: 12480,
+    trafficToday: 1246,        // nombre de trajets/commandes aujourd’hui
+    revenueToday: 2847.50,     // argent entré aujourd’hui
+  });
+
+  // Données pour le graphique unique (Traffic + Inscriptions)
+  const [chartData, setChartData] = useState<any[]>([]);
+
+  // Top 5 (gardé tel quel)
+  const [topUsers, setTopUsers] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Données simulées pour le chart : 12 jours réels + 2 jours estimés
+    const days = [
+      "12 mars", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23",
+      "24 (est.)", "25 (est.)"
+    ];
+
+    const generatedData = days.map((day, index) => {
+      const baseTraffic = 820 + Math.random() * 320 + Math.sin(index / 1.5) * 110;
+      const baseInscriptions = 18 + Math.random() * 28 + Math.cos(index / 2) * 8;
+
+      return {
+        day,
+        traffic: Math.round(baseTraffic),
+        inscriptions: Math.round(baseInscriptions),
+        isEstimate: index >= 12,
+      };
+    });
+
+    setChartData(generatedData);
+
+    // Top 5 utilisateurs par traffic aujourd’hui
+    setTopUsers([
+      { name: "Ahmed Benali", role: "Chauffeur", traffic: 87, revenue: 142 },
+      { name: "Fatima Zahra", role: "Client", traffic: 64, revenue: 89 },
+      { name: "Mohamed Kamel", role: "Chauffeur", traffic: 59, revenue: 134 },
+      { name: "Aicha Amrani", role: "Client", traffic: 52, revenue: 67 },
+      { name: "Youssef Tazi", role: "Chauffeur", traffic: 48, revenue: 98 },
+    ]);
+  }, []);
 
   if (loading) return <div>Chargement...</div>;
   if (error || !user) return <div>Vous devez être connecté</div>;
-
 
   return (
     <>
@@ -21,104 +76,149 @@ export default function DashboardPage() {
         {user ? <Greeting name={user?.role} /> : <span>Utilisateur non trouvé</span>}
       </div>
 
-      {/* Statistiques */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 lg:px-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-4 lg:px-6">
         <StatsCard
-          title="Daily Earnings"
-          value="$142.50"
+          title="Inscriptions aujourd’hui"
+          value={stats.inscriptionsToday.toString()}
+          icon="person_add"
+          trend="+12% vs hier"
+          trendColor="emerald"
+        />
+        <StatsCard
+          title="Utilisateurs totaux"
+          value={stats.totalUsers.toLocaleString()}
+          icon="group"
+          trend="+238 cette semaine"
+          trendColor="emerald"
+        />
+        <StatsCard
+          title="Traffic aujourd’hui"
+          value={stats.trafficToday.toString()}
+          icon="money"
+          trend="+8% vs hier"
+          trendColor="emerald"
+        />
+        <StatsCard
+          title="Argent entré aujourd’hui"
+          value={`${stats.revenueToday.toFixed(2)} €`}
           icon="payments"
-          trend="+15% vs yesterday"
+          trend="+21% vs hier"
           trendColor="emerald"
-        />
-        <StatsCard
-          title="Completed"
-          value="12"
-          icon="local_shipping"
-          trend="On Track"
-          trendColor="emerald"
-          iconOnlyTrend
-        />
-        <StatsCard
-          title="Distance Today"
-          value="68 km"
-          icon="directions_car"
-          trend="Peak zone active"
-          trendColor="amber"
-          warning
         />
       </div>
 
-      {/* Urgent Requests */}
-      <div className="mt-6 px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight">
-            Urgent Requests
-          </h3>
-          <button className="text-rouge-vif text-sm font-bold uppercase tracking-wider hover:underline">
-            View all
-          </button>
-        </div>
+      {/* Graphique unique : Traffic + Inscriptions */}
+      <div className="mt-8 px-4 lg:px-6">
+        <div className="bg-white rounded-xl border shadow-sm p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight">
+              Évolution Traffic & Inscriptions
+            </h3>
+            <div className="flex items-center gap-2 text-emerald-600 text-sm">
+              <TrendingUp className="w-4 h-4" />
+              12 jours + estimation
+            </div>
+          </div>
 
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scrollbar">
-          <UrgentRequestCard
-            imageUrl="https://lh3.googleusercontent.com/..."
-            price="$25.00"
-            title="Downtown Express Delivery"
-            distance="2.4 km"
-            time="Pickup in 5 mins"
-          />
-          <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80"
-            price="$17.80"
-            title="Birthday Cupcakes – Same Hour Surprise"
-            distance="4.4 km"
-            time="Pickup in 12 mins"
-            />
+          <ResponsiveContainer width="100%" height={380}>
+            <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="day" 
+                tick={{ fontSize: 12, fill: "#666" }}
+              />
+              <YAxis 
+                yAxisId="left"
+                tick={{ fontSize: 12, fill: "#666" }}
+                orientation="left"
+              />
+              <YAxis 
+                yAxisId="right"
+                tick={{ fontSize: 12, fill: "#666" }}
+                orientation="right"
+              />
+              <Tooltip />
+              <Legend />
 
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829545856-d10d5c6a19a0?w=800&auto=format&fit=crop&q=80"
-            price="$35.00"
-            title="Court Documents – Filing Deadline Today"
-            distance="5.7 km"
-            time="Pickup in 6 mins"
-            />
+              {/* Traffic - Ligne réelle + estimée */}
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="traffic"
+                stroke="#2563eb"
+                strokeWidth={3.5}
+                dot={{ fill: "#2563eb", r: 4 }}
+                name="Traffic (trajets)"
+                data={chartData.filter(d => !d.isEstimate)}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="traffic"
+                stroke="#2563eb"
+                strokeWidth={3.5}
+                strokeDasharray="6 4"
+                dot={{ fill: "#2563eb", r: 4 }}
+                name="Estimation Traffic"
+                data={chartData.filter(d => d.isEstimate)}
+              />
 
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829295980-85e0c1b9d8d5?w=800&auto=format&fit=crop&q=80"
-            price="$42.25"
-            title="Legal Contracts – Attorney to Client Rush"
-            distance="2.8 km"
-            time="Pickup now"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1581235720704-06d1018152dc?w=800&auto=format&fit=crop&q=80"
-            price="$31.40"
-            title="iPhone Repair Parts – Urgent Technician Need"
-            distance="6.2 km"
-            time="Pickup in 10 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1526045478516-99145907023c?w=800&auto=format&fit=crop&q=80"
-            price="$48.00"
-            title="Mother's Day Rose Bouquet – Last Minute"
-            distance="3.5 km"
-            time="Pickup in 9 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1581092160560-1c1e428e9d65?w=800&auto=format&fit=crop&q=80"
-            price="$55.75"
-            title="Car Battery Replacement – Roadside Urgent"
-            distance="7.1 km"
-            time="Pickup in 15 mins"
-            />
+              {/* Inscriptions - Ligne réelle + estimée */}
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="inscriptions"
+                stroke="#10b981"
+                strokeWidth={3.5}
+                dot={{ fill: "#10b981", r: 4 }}
+                name="Inscriptions"
+                data={chartData.filter(d => !d.isEstimate)}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="inscriptions"
+                stroke="#10b981"
+                strokeWidth={3.5}
+                strokeDasharray="6 4"
+                dot={{ fill: "#10b981", r: 4 }}
+                name="Estimation Inscriptions"
+                data={chartData.filter(d => d.isEstimate)}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      <PremiumGuide />
+      {/* Top 5 Utilisateurs par traffic aujourd’hui */}
+      <div className="mt-8 px-4 lg:px-6">
+        <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight mb-4">
+          Top 5 Utilisateurs (Traffic aujourd’hui)
+        </h3>
 
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="divide-y">
+            {topUsers.map((u, index) => (
+              <div key={index} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50">
+                <div className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-sm">
+                    {index + 1}
+                  </div>
+                  <div>
+                    <div className="font-medium text-bleu-fonce">{u.name}</div>
+                    <div className="text-sm text-gray-500">{u.role}</div>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <div className="font-semibold">{u.traffic} trajets</div>
+                  <div className="text-sm text-emerald-600">+{u.revenue}€</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div className="mt-8 px-4 lg:px-6">
         <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight mb-4">
           Platform Updates

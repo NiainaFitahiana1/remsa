@@ -22,7 +22,6 @@ type UserProfile = {
   role: string;
 };
 
-// Définition des liens par rôle
 const menuLinks = {
   CLIENT: [
     { href: '/dashboard', icon: 'home', label: 'Home' },
@@ -32,16 +31,17 @@ const menuLinks = {
     { href: '/dashboard/account', icon: 'person', label: 'Account' },
   ],
   ADMIN: [
-    { href: '/admin', icon: 'dashboard', label: 'Dashboard Admin' },
+    { href: '/admin', icon: 'dashboard', label: 'Home' },
     { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
-    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
-    { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
+    { href: '/admin/traffics', icon: 'shopping_cart', label: 'Traffic' },
+    { href: '/admin/boosts', icon: 'analytics', label: 'Boosting' },
+    { href: '/admin/report', icon: 'warning', label: 'Reports' },
     { href: '/admin/account', icon: 'person', label: 'Compte' },
   ],
   SUPER_ADMIN: [
     { href: '/admin', icon: 'dashboard', label: 'Dashboard Admin' },
     { href: '/admin/users', icon: 'group', label: 'Utilisateurs' },
-    { href: '/admin/orders', icon: 'shopping_cart', label: 'Commandes' },
+    { href: '/admin/traffics', icon: 'shopping_cart', label: 'Traffic' },
     { href: '/admin/stats', icon: 'analytics', label: 'Stats' },
     { href: '/admin/account', icon: 'person', label: 'Compte' },
   ],
