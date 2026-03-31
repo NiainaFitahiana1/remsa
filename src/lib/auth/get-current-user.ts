@@ -6,10 +6,9 @@ export async function getCurrentUser() {
   if (!token) return null;
 
   try {
-    const res = await fetch("https://claudine-synoptistic-nondefectively.ngrok-free.dev/auth/me", {
+    const res = await fetch("http://localhost:5000/auth/me", {
       headers: {
         Authorization: `Bearer ${token}`,
-        'ngrok-skip-browser-warning': 'true',
       },
       cache: "no-store",
     });

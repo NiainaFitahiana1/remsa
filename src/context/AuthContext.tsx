@@ -38,7 +38,7 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://claudine-synoptistic-nondefectively.ngrok-free.dev/api/auth'; // Adjust to your backend URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/auth'; // Adjust to your backend URL
 
 const api = axios.create({
   baseURL: API_BASE_URL,

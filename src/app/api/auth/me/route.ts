@@ -4,10 +4,8 @@ export async function GET(request: Request) {
   try {
     const backendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
       method: "GET",
-      credentials:'include',
       headers: {
         cookie: request.headers.get("cookie") || "",
-        'ngrok-skip-browser-warning': 'true',
       },
       cache: "no-store",
     });

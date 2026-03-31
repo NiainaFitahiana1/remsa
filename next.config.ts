@@ -4,15 +4,15 @@ const nextConfig = {
     return [
       {
         source: '/api/auth/:path*',
-        destination: 'https://claudine-synoptistic-nondefectively.ngrok-free.dev/auth/:path*',
+        destination: 'http://localhost:5000/auth/:path*',
       },
       {
         source: '/api/deliveries/:path*',
-        destination: 'https://claudine-synoptistic-nondefectively.ngrok-free.dev/deliveries/:path*',
+        destination: 'http://localhost:5000/deliveries/:path*',
       },
       {
         source: '/api/users/:path*',
-        destination: 'https://claudine-synoptistic-nondefectively.ngrok-free.dev/users/:path*',
+        destination: 'http://localhost:5000/users/:path*',
       },
       {
         source: '/api/:path*',

@@ -7,11 +7,7 @@ export function useUserRole() {
   useEffect(() => {
     const fetchRole = async () => {
       try {
-        const res = await fetch("/api/auth/me", { credentials: "include",
-          headers: {
-              'ngrok-skip-browser-warning': 'true',
-            },
-         });
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (res.ok) {
           const user = await res.json();
           setRole(user?.role ?? null);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') 
-  || 'https://claudine-synoptistic-nondefectively.ngrok-free.dev';
+  || 'http://localhost:5000';
 
 export const dynamic = 'force-dynamic';     // important pour cookies & auth
 
