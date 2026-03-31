@@ -24,6 +24,9 @@ export function useCurrentUser() {
         const res = await fetch("/api/auth/me", {
           credentials: "include",
           cache: "no-store",           // très important !
+          headers: {
+              'ngrok-skip-browser-warning': 'true',
+            },
         });
 
         if (!res.ok) {

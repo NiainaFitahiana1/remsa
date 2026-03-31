@@ -51,6 +51,9 @@ export function useLogin() {
       const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
         method: "GET",
         credentials: "include",
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        },
       });
 
       if (!userRes.ok) {
