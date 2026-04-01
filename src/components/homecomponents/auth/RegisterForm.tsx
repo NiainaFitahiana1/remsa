@@ -165,7 +165,7 @@ export const RegisterForm = () => {
         <form onSubmit={handleSubmit} className="space-y-5">
           
 
-          <Input
+          {/* <Input
             label="Identifiant"
             id="identifiant"
             name="identifiant"
@@ -174,7 +174,7 @@ export const RegisterForm = () => {
             onChange={handleChange}
             required
             disabled={isLoading}
-          />
+          /> */}
 
           <PasswordInput
             label="Mot de passe"

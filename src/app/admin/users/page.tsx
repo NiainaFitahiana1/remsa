@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -157,7 +158,7 @@ export default function UserManagementPage() {
       <div className="px-4 lg:px-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-bleu-fonce">Gestion des Utilisateurs</h1>
-          <Button>Ajouter un utilisateur</Button>
+          <Button asChild><Link href='/admin/users/requests'>Ajouter un utilisateur</Link></Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | "client" | "driver")}>

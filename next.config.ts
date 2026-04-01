@@ -4,15 +4,15 @@ const nextConfig = {
     return [
       {
         source: '/api/auth/:path*',
-        destination: 'http://localhost:5000/auth/:path*',
+        destination: 'https://qr-valid.onrender.com/auth/:path*',
       },
       {
         source: '/api/deliveries/:path*',
-        destination: 'http://localhost:5000/deliveries/:path*',
+        destination: 'https://qr-valid.onrender.com/deliveries/:path*',
       },
       {
         source: '/api/users/:path*',
-        destination: 'http://localhost:5000/users/:path*',
+        destination: 'https://qr-valid.onrender.com/users/:path*',
       },
       {
         source: '/api/:path*',

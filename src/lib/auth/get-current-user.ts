@@ -6,7 +6,7 @@ export async function getCurrentUser() {
   if (!token) return null;
 
   try {
-    const res = await fetch("http://localhost:5000/auth/me", {
+    const res = await fetch("https://qr-valid.onrender.com/auth/me", {
       headers: {
         Authorization: `Bearer ${token}`,
       },
