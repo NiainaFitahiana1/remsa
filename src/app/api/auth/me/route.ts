@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
+    const cookieHeader = request.headers.get("cookie") || "";
+
     const backendRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
       method: "GET",
       headers: {
-        cookie: request.headers.get("cookie") || "",
+        "Cookie": cookieHeader,           // Important : "Cookie" avec majuscule
       },
+      credentials: "include",             // Ajouté
       cache: "no-store",
     });
 
@@ -18,11 +21,9 @@ export async function GET(request: Request) {
     }
 
     const data = await backendRes.json();
-
     return NextResponse.json(data);
   } catch (error) {
     console.error("Proxy /auth/me error:", error);
-
     return NextResponse.json(
       { message: "Erreur serveur" },
       { status: 500 }

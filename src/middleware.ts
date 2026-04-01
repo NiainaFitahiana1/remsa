@@ -14,19 +14,16 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (request.headers.has("x-middleware-subrequest")) {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
-
   try {
+    const cookieHeader = request.headers.get("cookie") || "";
+
     const res = await fetch(`${request.nextUrl.origin}/api/auth/me`, {
       method: "GET",
       headers: {
-        cookie: request.headers.get("cookie") || "",
-        "x-protect-mw": "1",
+        "Cookie": cookieHeader,
       },
+      credentials: "include",
       cache: "no-store",
-      redirect: "manual",
     });
 
     if (!res.ok) {
@@ -41,18 +38,15 @@ export async function middleware(request: NextRequest) {
 
     const role = user.role;
 
-    if (pathname.startsWith("/dashboard/")) {
-      if (role !== "CLIENT") {
-        throw new Error("Accès interdit");
-      }
-    } else if (pathname.startsWith("/admin/")) {
-      if (role !== "ADMIN" && role !== "SUPER_ADMIN") {
-        throw new Error("Accès interdit");
-      }
-    } else if (pathname.startsWith("/livreur/")) {
-      if (role !== "DRIVER") {
-        throw new Error("Accès interdit");
-      }
+    // Vérification des rôles par route
+    if (pathname.startsWith("/dashboard/") && role !== "CLIENT") {
+      throw new Error("Accès interdit");
+    }
+    if (pathname.startsWith("/admin/") && !["ADMIN", "SUPER_ADMIN"].includes(role)) {
+      throw new Error("Accès interdit");
+    }
+    if (pathname.startsWith("/livreur/") && role !== "DRIVER") {
+      throw new Error("Accès interdit");
     }
 
     const response = NextResponse.next();
@@ -61,6 +55,7 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (err) {
+    console.error("Middleware auth error:", err);
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
