@@ -75,19 +75,29 @@ export default function DeliveryFromProductDialog({
   }>({});
 
   const GEOAPIFY_API_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
-
-  // Liste des produits à livrer
-  const itemsToDeliver = products.length > 0 ? products : product ? [product] : [];
+  const itemsToDeliver = useMemo(() => {
+    return products.length > 0 ? products : product ? [product] : [];
+  }, [products, product]);
 
   // Initialiser les quantités à 1 pour chaque produit quand le dialog s'ouvre
   useEffect(() => {
-    if (open && itemsToDeliver.length > 0) {
-      const initialQuantities: Record<number, number> = {};
-      itemsToDeliver.forEach((p) => {
-        initialQuantities[p.id] = 1;
-      });
-      setQuantities(initialQuantities);
-    }
+    if (!open || itemsToDeliver.length === 0) return;
+
+    const initialQuantities: Record<number, number> = {};
+    itemsToDeliver.forEach((p) => {
+      initialQuantities[p.id] = 1;
+    });
+
+    setQuantities((prev) => {
+      // ✅ éviter update inutile
+      const isSame =
+        Object.keys(prev).length === Object.keys(initialQuantities).length &&
+        Object.keys(initialQuantities).every(
+          (key) => prev[Number(key)] === initialQuantities[Number(key)]
+        );
+
+      return isSame ? prev : initialQuantities;
+    });
   }, [open, itemsToDeliver]);
 
   // Calcul du prix total dynamique
@@ -394,7 +404,7 @@ export default function DeliveryFromProductDialog({
                   name="price"
                   type="number"
                   step="0.01"
-                  value={form.price || suggestedTotalPrice}
+                  value={form.price !== "" ? form.price : suggestedTotalPrice}
                   onChange={handleManualChange}
                 />
               </div>

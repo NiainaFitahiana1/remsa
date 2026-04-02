@@ -15,12 +15,8 @@ export function DeliveryCard({
   isBeingDragged,
   onDragStart,
 }: DeliveryCardProps) {
-  const shortPickup = delivery.pickupAddress.split(",")[0];
-  const shortDrop = delivery.dropAddress.split(",")[0];
-
-  const deliverySlug = `${shortPickup.toLowerCase()}-to-${shortDrop.toLowerCase()}`
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+  const shortPickup = delivery.pickupAddress?.split(",")[0]?.trim() || "Départ inconnu";
+  const shortDrop = delivery.dropAddress?.split(",")[0]?.trim() || "Destination inconnue";
 
   return (
     <div
@@ -33,46 +29,49 @@ export function DeliveryCard({
         isBeingDragged && "opacity-50 scale-95"
       )}
     >
-      {/* En-tête : Trajet court */}
-      <div className="font-medium mb-1.5 line-clamp-1">
-        {shortPickup} → {shortDrop}
+      {/* En-tête + Statut */}
+      <div className="flex items-start justify-between mb-2">
+        <div className="font-medium line-clamp-1 flex-1 pr-2">
+          {shortPickup} → {shortDrop}
+        </div>
+        
+        {delivery.status && (
+          <span className="text-xs px-2.5 py-1 rounded-full border bg-amber-50 text-amber-700 font-medium">
+            {delivery.status}
+          </span>
+        )}
       </div>
 
       {/* Adresses complètes */}
       <div className="text-sm text-muted-foreground line-clamp-2 mb-4">
-        {delivery.pickupAddress} → {delivery.dropAddress}
+        {delivery.pickupAddress || "Adresse de départ non renseignée"} →{" "}
+        {delivery.dropAddress || "Adresse de destination non renseignée"}
       </div>
 
-      {/* Infos prix + distance */}
-      <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+      {/* Prix + Distance */}
+      <div className="flex items-center justify-between text-sm mb-4">
         {delivery.distanceKm && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <span className="material-symbols-outlined text-base">distance</span>
             {delivery.distanceKm} km
           </div>
         )}
         <div className="font-semibold text-primary">
-          {delivery.price.toFixed(2)} €
+          {delivery.price?.toFixed(2) || "0.00"} €
         </div>
       </div>
 
-      {/* Section Actions */}
-      <div className="pt-2 border-t flex flex-col gap-3">
-        {/* Lien vers les détails */}
+      {/* Actions */}
+      <div className="pt-3 border-t flex flex-col gap-3">
         <Link
-          href={`/dashboard/tasks/${delivery.id}`} 
+          href={`/dashboard/tasks/${delivery.id}`}
           className="text-sm text-primary hover:text-primary/80 hover:underline flex items-center gap-1.5 transition-colors"
         >
           Voir les détails
         </Link>
 
-        {/* Bouton Envoyer aux livreurs */}
         <SendDeliveryRequestModal delivery={delivery}>
-          <Button
-            size="sm"
-            className="w-full gap-2"
-            variant="default"
-          >
+          <Button size="sm" className="w-full gap-2" variant="default">
             <span className="material-symbols-outlined text-base">send</span>
             Envoyer aux livreurs
           </Button>

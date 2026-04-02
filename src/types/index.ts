@@ -67,6 +67,7 @@ export interface Delivery {
   price: number;
   status: DeliveryStatus;
   scheduledAt?: string | null;
+  createdAt?: string | null;
   client?: { nom: string; prenom: string };
 }
 
