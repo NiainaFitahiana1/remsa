@@ -79,6 +79,7 @@ export default function DeliveryFromProductDialog({
     return products.length > 0 ? products : product ? [product] : [];
   }, [products, product]);
 
+  const isSingleProduct = itemsToDeliver.length === 1;
   // Initialiser les quantités à 1 pour chaque produit quand le dialog s'ouvre
   useEffect(() => {
     if (!open || itemsToDeliver.length === 0) return;
@@ -114,7 +115,18 @@ export default function DeliveryFromProductDialog({
   }, [totalPrice]);
 
   const handleQuantityChange = (productId: number, value: string) => {
-    const numValue = Math.max(1, Number(value) || 1);
+    let numValue = Math.max(1, Number(value) || 1);
+
+    // Correction principale : si un seul produit → quantité maximale = 1
+    if (isSingleProduct) {
+      numValue = 1;
+    } else {
+      // Pour plusieurs produits → on respecte le stock
+      const currentProduct = itemsToDeliver.find((p) => p.id === productId);
+      const maxStock = currentProduct?.stock ?? 999;
+      numValue = Math.min(numValue, maxStock);
+    }
+
     setQuantities((prev) => ({ ...prev, [productId]: numValue }));
   };
 
@@ -317,11 +329,17 @@ export default function DeliveryFromProductDialog({
                       id={`qty-${p.id}`}
                       type="number"
                       min={1}
-                      max={p.stock || 999}
+                      max={isSingleProduct ? 1 : (p.stock || 999)}
                       value={quantities[p.id] || 1}
                       onChange={(e) => handleQuantityChange(p.id, e.target.value)}
                       className="mt-1"
+                      disabled={isSingleProduct}   // ← Ajout pour bloquer visuellement
                     />
+                    {isSingleProduct && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Quantité fixe : 1
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right w-24">

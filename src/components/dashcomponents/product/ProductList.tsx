@@ -158,10 +158,12 @@ export default function ProductList() {
         <h2 className="text-2xl font-bold tracking-tight">Mes produits & Marketplace</h2>
 
         <div className="flex gap-3">
-          <ProductDialog 
+         <ProductDialog 
             mode="create" 
+            onProductCreated={(newProduct) => {
+              setProducts((prev) => [newProduct, ...prev]);
+            }}
           />
-
           {selectedProducts.length > 0 && (
             <DeliveryFromProductDialog
               products={selectedProductsData}
@@ -190,6 +192,9 @@ export default function ProductList() {
           <div className="mt-6">
             <ProductDialog 
               mode="create" 
+              onProductCreated={(newProduct) => {
+                setProducts((prev) => [newProduct, ...prev]);
+              }}
             />
           </div>
         </div>
@@ -288,8 +293,10 @@ export default function ProductList() {
                         <ProductDialog
                           mode="edit"
                           product={product}
-                          onSuccess={() => {
-                            toast.success("Produit mis à jour avec succès");
+                          onProductUpdated={(updatedProduct) => {
+                            setProducts((prev) =>
+                              prev.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
+                            );
                           }}
                         />
                         <DeliveryFromProductDialog

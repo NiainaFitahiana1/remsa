@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil } from "lucide-react";
-import { toast } from "sonner";   // ← Ajouté
+import { toast } from "sonner";
 
 type ProductFormData = {
   name: string;
@@ -26,24 +26,36 @@ type ProductFormData = {
   isActive: boolean;
 };
 
+type Product = {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  stock?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  createdBy?: {
+    id: number;
+    email: string;
+    nom?: string;
+  };
+};
+
 interface ProductDialogProps {
   mode: "create" | "edit";
-  product?: {
-    id: number;
-    name: string;
-    description?: string | null;
-    price: number;
-    imageUrl?: string | null;
-    stock?: number | null;
-    isActive: boolean;
-  };
-  onSuccess?: () => void;
+  product?: Product;
+  onSuccess?: () => void;                    // Optionnel (ancien comportement)
+  onProductCreated?: (newProduct: Product) => void;   // Pour la création
+  onProductUpdated?: (updatedProduct: Product) => void; // Pour l'édition
 }
 
 export default function ProductDialog({
   mode,
   product,
   onSuccess,
+  onProductCreated,
+  onProductUpdated,
 }: ProductDialogProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,33 +63,24 @@ export default function ProductDialog({
 
   const isEdit = mode === "edit";
 
-  const initialForm: ProductFormData = {
+  const getInitialForm = (): ProductFormData => ({
     name: product?.name || "",
     description: product?.description || "",
     price: product?.price?.toString() || "",
     imageUrl: product?.imageUrl || "",
     stock: product?.stock?.toString() || "0",
     isActive: product?.isActive ?? true,
-  };
+  });
 
-  const [form, setForm] = useState<ProductFormData>(initialForm);
+  const [form, setForm] = useState<ProductFormData>(getInitialForm);
 
-  // Réinitialiser le formulaire quand le produit change ou quand on ouvre/ferme
+  // Réinitialisation du formulaire
   useEffect(() => {
-    if (open && isEdit && product) {
-      setForm({
-        name: product.name || "",
-        description: product.description || "",
-        price: product.price?.toString() || "",
-        imageUrl: product.imageUrl || "",
-        stock: product.stock?.toString() || "0",
-        isActive: product.isActive ?? true,
-      });
-    } else if (!open) {
-      setForm(initialForm);
+    if (open) {
+      setForm(getInitialForm());
       setError(null);
     }
-  }, [open, product, isEdit]);
+  }, [open, product]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -128,23 +131,30 @@ export default function ProductDialog({
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          setError("Session expirée. Veuillez vous reconnecter.");
-        } else if (res.status === 403) {
-          setError("Vous n'avez pas la permission d'effectuer cette action.");
-        } else {
+        if (res.status === 401) setError("Session expirée. Veuillez vous reconnecter.");
+        else if (res.status === 403) setError("Vous n'avez pas la permission.");
+        else {
           const err = await res.json().catch(() => ({}));
           setError(err.message || "Une erreur est survenue");
         }
         return;
       }
 
-      // Succès
+      const result: Product = await res.json();
+
       const action = isEdit ? "modifié" : "créé";
       toast.success(`Produit ${action} avec succès !`);
 
       setOpen(false);
-      onSuccess?.();
+
+      // Mise à jour optimiste selon le mode
+      if (!isEdit && onProductCreated) {
+        onProductCreated(result);           // Création
+      } else if (isEdit && onProductUpdated && result) {
+        onProductUpdated(result);           // Édition
+      } else {
+        onSuccess?.();                      // Fallback
+      }
 
     } catch (err: any) {
       setError(err.message || "Erreur réseau ou serveur");
@@ -155,7 +165,7 @@ export default function ProductDialog({
   };
 
   const title = isEdit ? "Modifier le produit" : "Nouveau produit";
-  const description = isEdit
+  const descriptionText = isEdit
     ? "Modifiez les informations du produit."
     : "Ajoutez un nouveau produit dans le catalogue.";
 
@@ -177,7 +187,7 @@ export default function ProductDialog({
       <DialogContent className="sm:max-w-[425px] md:max-w-lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>{descriptionText}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 py-4">
