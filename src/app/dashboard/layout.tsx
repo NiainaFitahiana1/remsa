@@ -4,7 +4,7 @@ import MobileAppBar from "@/components/dashcomponents/MobileAppBar";
 import MobileBottomNav from "@/components/dashcomponents/MobileBottomNav";
 import Breadcrumb from "@/components/dashcomponents/BreadCrumb";
 import { Bell } from "lucide-react";
-import { useState, useEffect, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import Sidebar from "@/components/dashcomponents/Sidebar";
 import { io, Socket } from "socket.io-client";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
@@ -28,33 +28,61 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // ====================== CONNEXION WEBSOCKET ======================
+  const socketRef = useRef<Socket | null>(null);
+
+  // ====================== WEBSOCKET ======================
   useEffect(() => {
-    if (!user?.id) return;
+    console.log("🔄 useEffect WebSocket déclenché - user.id:", user?.id);
 
+    if (!user?.id) {
+      console.log("⏭️ Pas d'utilisateur, socket ignoré");
+      return;
+    }
+
+    if (socketRef.current?.connected) {
+      console.log("✅ Socket déjà connecté, envoi de joinNotifications seulement");
+      socketRef.current.emit("joinNotifications", user.id);
+      return;
+    }
+
+    console.log("🔌 Création d'une nouvelle connexion Socket.IO...");
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000/notifications",
+      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000",
       {
         withCredentials: true,
         transports: ["websocket", "polling"],
       }
     );
 
-    setSocket(socketInstance);
+    socketRef.current = socketInstance;
 
     socketInstance.on("connect", () => {
+      console.log("✅ SOCKET CONNECTÉ avec succès ! ID:", socketInstance.id);
       socketInstance.emit("joinNotifications", user.id);
     });
 
+    socketInstance.on("disconnect", (reason) => {
+      console.log("❌ SOCKET DÉCONNECTÉ - Raison:", reason);
+    });
+
     socketInstance.on("newNotification", (newNotif: Notification) => {
+      console.log("📨 NOUVELLE NOTIFICATION REÇUE :", newNotif);
       setNotifications((prev) => [newNotif, ...prev]);
       setUnreadCount((prev) => prev + 1);
     });
 
+    // Optionnel : voir les erreurs
+    socketInstance.on("connect_error", (err) => {
+      console.error("⚠️ Erreur de connexion Socket :", err.message);
+    });
+
     return () => {
-      socketInstance.disconnect();
+      console.log("🧹 Nettoyage du socket...");
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
     };
   }, [user?.id]);
 
@@ -68,6 +96,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         if (!res.ok) throw new Error("Erreur de chargement");
 
         const data = await res.json();
+        console.log("📋 Notifications chargées :", data.length);
         setNotifications(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Erreur lors du chargement des notifications :", err);
@@ -83,7 +112,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     setUnreadCount(unread);
   }, [notifications]);
 
-  // ====================== ACTIONS ======================
   const markAsRead = async (id: number) => {
     try {
       await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
@@ -106,7 +134,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
   };
 
-  // ====================== RENDU CONDITIONNEL (APRÈS TOUS LES HOOKS) ======================
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>;
   }
@@ -122,7 +149,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       <div className="flex flex-col min-h-screen lg:pl-64">
         <MobileAppBar />
 
-        {/* Bouton Notifications */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
           className={`
@@ -154,7 +180,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <MobileBottomNav />
       </div>
 
-      {/* Panneau Notifications */}
       {showNotifications && (
         <div className="fixed top-16 right-6 z-50 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200/60 overflow-hidden">
           <div className="p-4 border-b bg-gray-50 flex items-center justify-between font-medium text-gray-800">

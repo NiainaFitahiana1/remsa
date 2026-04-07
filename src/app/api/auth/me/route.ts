@@ -1,61 +1,85 @@
 import { NextResponse } from "next/server";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
-
 export async function GET(request: Request) {
-  const cookie = request.headers.get("cookie") || "";
+  // Récupère l'URL du backend directement ici (plus fiable)
+  const API = process.env.NEXT_PUBLIC_API_URL;
+
+  if (!API) {
+    console.error("❌ NEXT_PUBLIC_API_URL n'est pas défini dans .env");
+    return NextResponse.json(
+      { message: "Configuration serveur manquante" },
+      { status: 500 }
+    );
+  }
+
+  const cookieHeader = request.headers.get("cookie") || "";
 
   try {
-    // 1️⃣ tentative normale
+    // 1. Tentative d'appel à /auth/me
     let backendRes = await fetch(`${API}/auth/me`, {
       method: "GET",
-      headers: { cookie },
+      headers: { 
+        Cookie: cookieHeader 
+      },
+      credentials: "include",
       cache: "no-store",
     });
 
-    // 2️⃣ si access token expiré → refresh
+    // 2. Si access token expiré (401) → on fait le refresh
     if (backendRes.status === 401) {
+      console.log("🔄 Access token expiré → Refresh en cours...");
+
       const refreshRes = await fetch(`${API}/auth/refresh`, {
         method: "POST",
-        headers: { cookie },
+        headers: { 
+          Cookie: cookieHeader 
+        },
+        credentials: "include",
       });
 
       if (!refreshRes.ok) {
+        console.log("❌ Refresh échoué");
         return NextResponse.json(
-          { message: "Session expirée" },
+          { message: "Session expirée, veuillez vous reconnecter" },
           { status: 401 }
         );
       }
 
-      const setCookie = refreshRes.headers.get("set-cookie");
-
+      // 3. On refait l'appel à /me avec les nouveaux cookies
       backendRes = await fetch(`${API}/auth/me`, {
         method: "GET",
-        headers: {
-          cookie: setCookie || "",
+        headers: { 
+          Cookie: cookieHeader 
         },
+        credentials: "include",
+        cache: "no-store",
       });
-
-      const data = await backendRes.json();
-
-      const response = NextResponse.json(data);
-
-      if (setCookie) {
-        response.headers.set("set-cookie", setCookie);
-      }
-
-      return response;
     }
 
-    // 5️⃣ si OK direct
+    // Si toujours pas OK après refresh
+    if (!backendRes.ok) {
+      return NextResponse.json(
+        { message: "Impossible de récupérer les informations utilisateur" },
+        { status: backendRes.status }
+      );
+    }
+
     const data = await backendRes.json();
-    return NextResponse.json(data);
 
-  } catch (error) {
-    console.error("Proxy /auth/me error:", error);
+    // Création de la réponse
+    const response = NextResponse.json(data);
 
+    // Copie tous les nouveaux Set-Cookie (access + refresh) vers le client
+    const setCookies = backendRes.headers.getSetCookie?.() || [];
+    setCookies.forEach((cookie) => {
+      response.headers.append("Set-Cookie", cookie);
+    });
+
+    return response;
+  } catch (error: any) {
+    console.error("🚨 Erreur proxy /auth/me :", error);
     return NextResponse.json(
-      { message: "Erreur serveur" },
+      { message: "Erreur de connexion au serveur" },
       { status: 500 }
     );
   }

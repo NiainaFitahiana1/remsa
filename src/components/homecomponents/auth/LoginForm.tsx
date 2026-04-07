@@ -17,6 +17,9 @@ export const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  const handleGoogleLogin = () => {
+    window.location.href = 'http://localhost:5000/auth/google';
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Note : ton hook useLogin n'accepte pas rememberMe → à ajouter si besoin côté backend
@@ -77,26 +80,6 @@ export const LoginForm = () => {
               </button>
             }
           />
-         {/* 
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-              className="
-                absolute right-3 top-1/2 -translate-y-1/2
-                text-slate-500 hover:text-slate-700
-                dark:text-slate-400 dark:hover:text-slate-200
-                focus:outline-none focus:text-primary
-                transition-colors
-              "
-              aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
-            >
-              {showPassword ? (
-                <EyeOff className="h-5 w-5" />
-              ) : (
-                <Eye className="h-5 w-5" />
-              )}
-            </button> */}
         </div>
 
         {error && (
@@ -173,6 +156,7 @@ export const LoginForm = () => {
 
       <button
         type="button"
+        onClick={handleGoogleLogin}
         className="
           flex w-full items-center justify-center gap-2 rounded bg-white py-3 font-medium text-navy
           transition-colors hover:bg-slate-50
