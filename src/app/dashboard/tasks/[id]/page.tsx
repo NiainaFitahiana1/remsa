@@ -150,12 +150,16 @@ export default function DeliveryDetailPage({ params }: Props) {
           </Badge>
         </div>
         <p className="text-slate-500">
-          {new Date(delivery.createdAt).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-          })}
+          {delivery.createdAt ? (
+            new Date(delivery.createdAt).toLocaleDateString('fr-FR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          ) : (
+            "Date inconnue"
+          )}
         </p>
       </div>
 

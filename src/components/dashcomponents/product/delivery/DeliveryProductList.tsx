@@ -3,7 +3,9 @@ import { Product } from "@/types";
 type DeliveryProductListProps = {
   items: Product[];
   quantities: Record<number, number>;
-  onQuantityChange: (quantities: Record<number, number>) => void;
+  onQuantityChange: (
+    val: Record<number, number> | ((prev: Record<number, number>) => Record<number, number>)
+  ) => void;
   isSingleProduct: boolean;
 };
 
@@ -24,7 +26,11 @@ export function DeliveryProductList({
       num = Math.min(num, max);
     }
 
-    onQuantityChange((prev) => ({ ...prev, [productId]: num }));
+    // ✅ Maintenant TypeScript accepte cette syntaxe
+    onQuantityChange((prev) => ({ 
+      ...prev, 
+      [productId]: num 
+    }));
   };
 
   return (
@@ -41,7 +47,7 @@ export function DeliveryProductList({
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">{p.name}</p>
             <p className="text-sm text-muted-foreground">
-              {p.price.toFixed(2)} € / unité
+              {p.price.toFixed(2)} FCFA / unité
             </p>
           </div>
 
@@ -63,7 +69,7 @@ export function DeliveryProductList({
 
           <div className="text-right w-24">
             <p className="font-semibold text-sm">
-              {(p.price * (quantities[p.id] || 1)).toFixed(2)} €
+              {(p.price * (quantities[p.id] || 1)).toFixed(2)} FCFA
             </p>
           </div>
         </div>
