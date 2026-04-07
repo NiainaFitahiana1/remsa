@@ -8,19 +8,20 @@ import { Button } from '@/components/homecomponents/ui/Button';
 import { Select } from '../ui/Select';
 import Image from 'next/image';
 import logo from '@/../public/logos/logo-text.png';
-import { useRegister } from '@/hooks/useRegister'; // ← adapte le chemin selon ton projet
-import type { RegisterFormData } from '@/types';   // adapte selon ton typage réel
+import { useRegister } from '@/hooks/useRegister'; 
+import type { RegisterFormData } from '@/types';
 
 export const RegisterForm = () => {
   const router = useRouter();
   const { register, isLoading, error } = useRegister();
 
   const [step, setStep] = useState<1 | 2>(1);
+  const [errorTemp, setErrorTemp] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<RegisterFormData>({
     nom: '',
     prenom: '',
-    identifiant: '',
+    identifiant: '', 
     email: '',
     telephone: '',
     password: '',
@@ -30,10 +31,16 @@ export const RegisterForm = () => {
     zone: undefined,
   });
 
+  // Aperçu dynamique pour l'utilisateur
+  const visualIdentifier = formData.nom 
+    ? `@${formData.roleId === 2 ? 'liv' : 'client'}#..._${formData.nom.trim().toLowerCase().replace(/\s+/g, '_')}`
+    : "En attente du nom...";
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    setErrorTemp(null);
     setFormData((prev) => ({
       ...prev,
       [name]: value || undefined,
@@ -42,46 +49,29 @@ export const RegisterForm = () => {
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.prenom.trim()) return setErrorTemp('Le prénom est requis');
-    if (!formData.nom.trim())    return setErrorTemp('Le nom est requis');
+    if (!formData.nom.trim()) return setErrorTemp('Le nom est requis');
+    if (!formData.email?.trim()) return setErrorTemp('L’email est requis');
     if (!formData.telephone.trim()) return setErrorTemp('Le téléphone est requis');
-
     setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation finale étape 2
-    if (!formData.identifiant.trim()) {
-      setErrorTemp('L’identifiant est requis');
-      return;
-    }
-    if (!formData.password) {
-      setErrorTemp('Le mot de passe est requis');
-      return;
-    }
-    if (!formData.email?.trim()) {
-      setErrorTemp('L’email est obligatoire');
-      return;
-    }
+    if (!formData.password) return setErrorTemp('Le mot de passe est requis');
+    
     if (formData.roleId === 2) {
-      if (!formData.vehicleType) {
-        setErrorTemp('Le type de véhicule est requis pour un chauffeur');
-        return;
-      }
-      if (!formData.zone?.trim()) {
-        setErrorTemp('La zone d’opération est requise pour un chauffeur');
-        return;
-      }
+      if (!formData.vehicleType) return setErrorTemp('Le type de véhicule est requis');
+      if (!formData.zone?.trim()) return setErrorTemp('La zone est requise');
     }
 
-    await register(formData);
+    // On envoie une valeur provisoire pour satisfaire le DTO côté NestJS
+    await register({
+      ...formData,
+      identifiant: "TEMP_AUTO_GEN", 
+    });
   };
-
-  // Erreur locale pour l’étape 1 (car useRegister gère surtout l’étape 2)
-  const [errorTemp, setErrorTemp] = useState<string | null>(null);
 
   const isChauffeur = formData.roleId === 2;
 
@@ -164,16 +154,14 @@ export const RegisterForm = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           
-
           <Input
-            label="Identifiant"
+            label="Identifiant unique (Attribué)"
             id="identifiant"
             name="identifiant"
-            placeholder="Votre identifiant unique"
-            value={formData.identifiant}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
+            value={visualIdentifier}
+            disabled={true} 
+            readOnly
+            className="bg-slate-50 font-mono text-xs opacity-80 cursor-not-allowed"
           />
 
           <PasswordInput
@@ -223,7 +211,7 @@ export const RegisterForm = () => {
           />
 
           {isChauffeur && (
-            <>
+            <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
               <Select
                 label="Type de véhicule"
                 id="vehicleType"
@@ -244,13 +232,13 @@ export const RegisterForm = () => {
                 label="Zone d'opération"
                 id="zone"
                 name="zone"
-                placeholder="ex: Antananarivo Centre, Toamasina..."
+                placeholder="ex: Antananarivo Centre..."
                 value={formData.zone || ''}
                 onChange={handleChange}
                 required
                 disabled={isLoading}
               />
-            </>
+            </div>
           )}
 
           {(error || errorTemp) && (
@@ -262,7 +250,7 @@ export const RegisterForm = () => {
           <div className="flex gap-3">
             <Button
               type="button"
-              variant="outline" // ← suppose que ton Button supporte variant="outline"
+              variant="outline"
               className="flex-1 py-3.5 text-base"
               onClick={() => {
                 setStep(1);
@@ -275,36 +263,10 @@ export const RegisterForm = () => {
 
             <Button
               type="submit"
-              className="flex-1 py-3.5 text-base shadow-sm transition-opacity"
+              className="flex-1 py-3.5 text-base shadow-sm"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8h8a8 8 0 01-16 0z"
-                    />
-                  </svg>
-                  Inscription...
-                </div>
-              ) : (
-                'Créer mon compte'
-              )}
+              {isLoading ? 'Inscription...' : 'Créer mon compte'}
             </Button>
           </div>
         </form>
