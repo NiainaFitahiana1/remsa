@@ -1,160 +1,227 @@
 "use client";
 
-import Greeting from "@/components/dashcomponents/Greeting";
-import StatsCard from "@/components/dashcomponents/StatsCard";
-import UrgentRequestCard from "@/components/dashcomponents/UrgentRequestCard";
-import PremiumGuide from "@/components/dashcomponents/PremiumGuide";
-import PlatformUpdateItem from "@/components/dashcomponents/PlatformUpdateItem";
-import { useCurrentUser } from "@/lib/auth/use-current-user";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  Line,
+} from "recharts";
+
+import { Truck, MapPin, DollarSign, Clock, Star } from "lucide-react";
+
+// ==================== DONNÉES ====================
+const weeklyPerformance = [
+  { day: "Lun", earnings: 1240, deliveries: 12 },
+  { day: "Mar", earnings: 1980, deliveries: 18 },
+  { day: "Mer", earnings: 1670, deliveries: 14 },
+  { day: "Jeu", earnings: 2450, deliveries: 22 },
+  { day: "Ven", earnings: 2890, deliveries: 25 },
+  { day: "Sam", earnings: 2120, deliveries: 19 },
+  { day: "Dim", earnings: 920,  deliveries: 8 },
+];
+
+const monthlyTrend = [
+  { month: "Jan", earnings: 28500 },
+  { month: "Fév", earnings: 32400 },
+  { month: "Mar", earnings: 29800 },
+  { month: "Avr", earnings: 35100 },
+  { month: "Mai", earnings: 41200 },
+  { month: "Juin", earnings: 38700 },
+  { month: "Juil", earnings: 46500 },
+  { month: "Août", earnings: 42800 },
+  { month: "Sep", earnings: 39200 },
+  { month: "Oct", earnings: 47500 },
+  { month: "Nov", earnings: 51000 },
+  { month: "Déc", earnings: 49800 },
+];
+
+const deliveryTypes = [
+  { name: "Express", value: 48 },
+  { name: "Standard", value: 35 },
+  { name: "Alimentaire", value: 22 },
+  { name: "Pharmacie", value: 15 },
+  { name: "Documents", value: 8 },
+];
+
+const PIE_COLORS = [
+  "#e73645", // Rouge principal
+  "#f97316", // Orange
+  "#eab308", // Jaune
+  "#22c55e", // Vert
+  "#3b82f6", // Bleu
+];
 
 export default function LivreurDashboardPage() {
-
-  const { user, loading, error } = useCurrentUser();
-
-  if (loading) return <div>Chargement...</div>;
-  if (error || !user) return <div>Vous devez être connecté</div>;
-
   return (
-    <>
-      <div className="p-4 lg:p-6">
-        {user ? <Greeting name={user?.role} /> : <span>Utilisateur non trouvé</span>}
-      </div>
-
-      {/* Statistiques du Livreurr */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 lg:px-6">
-        <StatsCard
-          title="Livraisons Aujourd'hui"
-          value="18"
-          icon="local_shipping"
-          trend="+4 vs hier"
-          trendColor="emerald"
-        />
-        <StatsCard
-          title="Distance Parcourue"
-          value="87 km"
-          icon="directions_car"
-          trend="Zone active"
-          trendColor="amber"
-          warning
-        />
-        <StatsCard
-          title="Gains du Jour"
-          value="1 240 DA"
-          icon="payments"
-          trend="+22% vs hier"
-          trendColor="emerald"
-        />
-      </div>
-
-      {/* Tâche Actuelle (Grande carte mise en avant) */}
-      <div className="mt-8 px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight">
-            Tâche Actuelle
-          </h3>
-          <span className="text-rouge-vif text-sm font-bold uppercase tracking-wider">URGENT</span>
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900">
+            Tableau de bord
+          </h1>
+          <p className="mt-2 text-zinc-600">
+            Aperçu de votre activité • Mercredi 8 Avril 2026
+          </p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-red-600 text-white rounded-3xl p-8 shadow-xl">
-          <div className="flex justify-between items-start">
-            <div className="space-y-6">
-              <div>
-                <p className="text-orange-200 text-sm uppercase tracking-widest">Adresse</p>
-                <p className="text-2xl font-bold">Résidence Les Palmiers - Appart 12B</p>
-              </div>
-
-              <div>
-                <p className="text-orange-200 text-sm">Client</p>
-                <p className="text-xl">Mme Fatima</p>
-              </div>
-
-              <div>
-                <p className="text-orange-200 text-sm">Colis</p>
-                <p className="text-xl">2 pizzas + 1 boisson</p>
-              </div>
-
-              <div className="flex gap-10">
-                <div>
-                  <p className="text-orange-200 text-sm">Distance</p>
-                  <p className="text-3xl font-bold">3.2 km</p>
-                </div>
-                <div>
-                  <p className="text-orange-200 text-sm">Temps restant</p>
-                  <p className="text-3xl font-bold">8 min</p>
-                </div>
-              </div>
+        {/* KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <p className="text-zinc-500 text-sm font-medium uppercase tracking-wider">Gains du jour</p>
+              <DollarSign className="h-5 w-5 text-emerald-600" />
             </div>
-
-            <div className="text-7xl opacity-80">🛵</div>
+            <p className="text-4xl font-bold mt-3">1 240 DA</p>
+            <p className="text-emerald-600 text-sm font-medium mt-1">+22% par rapport à hier</p>
           </div>
 
-          <button className="mt-10 w-full bg-white text-orange-600 font-bold text-xl py-5 rounded-2xl hover:bg-gray-100 active:scale-[0.98] transition">
-            J'ARRIVE !
-          </button>
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <p className="text-zinc-500 text-sm font-medium uppercase tracking-wider">Livraisons aujourd’hui</p>
+              <Truck className="h-5 w-5 text-orange-600" />
+            </div>
+            <p className="text-4xl font-bold mt-3">18</p>
+            <p className="text-orange-600 text-sm font-medium mt-1">Moyenne : 8.3 / jour</p>
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <p className="text-zinc-500 text-sm font-medium uppercase tracking-wider">Distance parcourue</p>
+              <MapPin className="h-5 w-5 text-blue-600" />
+            </div>
+            <p className="text-4xl font-bold mt-3">87 km</p>
+            <p className="text-blue-600 text-sm font-medium mt-1">Zone active : Alger Centre</p>
+          </div>
+
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <p className="text-zinc-500 text-sm font-medium uppercase tracking-wider">Note moyenne</p>
+              <Star className="h-5 w-5 text-amber-500" />
+            </div>
+            <p className="text-4xl font-bold mt-3">4.9</p>
+            <p className="text-amber-500 text-sm font-medium mt-1">★★★★☆</p>
+          </div>
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Weekly Performance - Bar Chart */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-bold mb-6">Performance Hebdomadaire</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={weeklyPerformance}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="day" stroke="#6b7280" />
+                  <YAxis yAxisId="left" stroke="#6b7280" />
+                  <YAxis yAxisId="right" orientation="right" stroke="#6b7280" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e73645",
+                      borderRadius: "8px",
+                      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="earnings"
+                    name="Gains (DA)"
+                    fill="#e73645"
+                    radius={[6, 6, 0, 0]}
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="deliveries"
+                    name="Livraisons"
+                    fill="#f59e0b"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Monthly Trend - Area + Line */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xl font-bold mb-6">Évolution des gains 2026</h3>
+            <div className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="month" stroke="#6b7280" />
+                  <YAxis stroke="#6b7280" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e73645",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="earnings"
+                    stroke="#e73645"
+                    fill="#e73645"
+                    fillOpacity={0.15}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="earnings"
+                    stroke="#f59e0b"
+                    strokeWidth={3}
+                    dot={{ fill: "#f59e0b", stroke: "#fff", strokeWidth: 2, r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Delivery Types - Pie Chart */}
+          <div className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm lg:col-span-2">
+            <h3 className="text-xl font-bold mb-6">Répartition des types de livraisons</h3>
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={deliveryTypes}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={150}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {deliveryTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#fff",
+                      border: "1px solid #e73645",
+                      borderRadius: "8px",
+                    }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Dernières Livraisons */}
-      <div className="mt-10 px-4 lg:px-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight">
-            Dernières Livraisons
-          </h3>
-          <button className="text-rouge-vif text-sm font-bold uppercase tracking-wider hover:underline">
-            Voir tout
-          </button>
-        </div>
-
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 hide-scrollbar">
-          <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80"
-            price="✓ Livré"
-            title="Café Central"
-            distance="Il y a 25 min"
-            time="2 cafés + croissant"
-          />
-          <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829545856-d10d5c6a19a0?w=800&auto=format&fit=crop&q=80"
-            price="✓ Livré"
-            title="Pharmacie El Bahia"
-            distance="Il y a 1h 10"
-            time="Médicaments"
-          />
-          <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829295980-85e0c1b9d8d5?w=800&auto=format&fit=crop&q=80"
-            price="✓ Livré"
-            title="Supermarché Aziza"
-            distance="Il y a 2h"
-            time="Courses familiales"
-          />
-        </div>
-      </div>
-
-      <PremiumGuide />
-
-      {/* Mises à jour & Infos Livreurr */}
-      <div className="mt-8 px-4 lg:px-6">
-        <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight mb-4">
-          Infos & Alertes
-        </h3>
-        <div className="flex flex-col gap-4">
-          <PlatformUpdateItem
-            icon="warning"
-            title="Pic d’activité - Centre Ville"
-            description="Beaucoup de commandes ce soir. Restez dans la zone pour maximiser vos gains."
-          />
-          <PlatformUpdateItem
-            icon="ev_station"
-            title="Bonus Électrique"
-            description="Passez en scooter électrique et gagnez +18% sur toutes vos courses jusqu’en juin 2026."
-          />
-          <PlatformUpdateItem
-            icon="verified_user"
-            title="Rappel Sécurité"
-            description="N’oubliez pas de porter le casque et de vérifier vos feux avant chaque départ."
-          />
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
