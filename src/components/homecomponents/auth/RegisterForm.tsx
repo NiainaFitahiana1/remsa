@@ -1,14 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@/components/homecomponents/ui/Input';
-import { PasswordInput } from '@/components/homecomponents/ui/PasswordInput';
-import { Button } from '@/components/homecomponents/ui/Button';
-import { Select } from '../ui/Select';
 import Image from 'next/image';
 import logo from '@/../public/logos/logo-text.png';
-import { useRegister } from '@/hooks/useRegister'; 
+import { Eye, EyeOff } from 'lucide-react';
+import { useRegister } from '@/hooks/useRegister';
 import type { RegisterFormData } from '@/types';
 
 export const RegisterForm = () => {
@@ -21,7 +18,7 @@ export const RegisterForm = () => {
   const [formData, setFormData] = useState<RegisterFormData>({
     nom: '',
     prenom: '',
-    identifiant: '', 
+    identifiant: '',
     email: '',
     telephone: '',
     password: '',
@@ -31,14 +28,31 @@ export const RegisterForm = () => {
     zone: undefined,
   });
 
-  // Aperçu dynamique pour l'utilisateur
-  const visualIdentifier = formData.nom 
-    ? `@${formData.roleId === 2 ? 'liv' : 'client'}#..._${formData.nom.trim().toLowerCase().replace(/\s+/g, '_')}`
-    : "En attente du nom...";
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  // Regex pour validation en temps réel
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
+  // Validation live
+  const emailError = useMemo(() => {
+    if (!formData.email) return '';
+    return emailRegex.test(formData.email) ? '' : 'Veuillez entrer une adresse email valide';
+  }, [formData.email]);
+
+  const passwordError = useMemo(() => {
+    if (!formData.password) return '';
+    return passwordRegex.test(formData.password)
+      ? ''
+      : 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre';
+  }, [formData.password]);
+
+  // Aperçu identifiant
+  const visualIdentifier = formData.nom
+    ? `@${formData.roleId === 2 ? 'liv' : 'client'}#..._${formData.nom.trim().toLowerCase().replace(/\s+/g, '_')}`
+    : 'En attente du nom...';
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setErrorTemp(null);
     setFormData((prev) => ({
@@ -49,238 +63,306 @@ export const RegisterForm = () => {
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!formData.prenom.trim()) return setErrorTemp('Le prénom est requis');
     if (!formData.nom.trim()) return setErrorTemp('Le nom est requis');
     if (!formData.email?.trim()) return setErrorTemp('L’email est requis');
+    if (emailError) return setErrorTemp('Veuillez corriger l’email');
     if (!formData.telephone.trim()) return setErrorTemp('Le téléphone est requis');
+
     setStep(2);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (passwordError) return setErrorTemp('Veuillez corriger le mot de passe');
 
-    if (!formData.password) return setErrorTemp('Le mot de passe est requis');
-    
     if (formData.roleId === 2) {
       if (!formData.vehicleType) return setErrorTemp('Le type de véhicule est requis');
       if (!formData.zone?.trim()) return setErrorTemp('La zone est requise');
     }
 
-    // On envoie une valeur provisoire pour satisfaire le DTO côté NestJS
     await register({
       ...formData,
-      identifiant: "TEMP_AUTO_GEN", 
+      identifiant: 'TEMP_AUTO_GEN',
     });
   };
 
   const isChauffeur = formData.roleId === 2;
 
   return (
-    <div className="w-full max-w-[440px] rounded border border-slate-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-8 flex items-center justify-center gap-5">
+    <div className="max-w-4xl w-full space-y-8 glass-card p-6 sm:p-10 rounded-3xl shadow-2xl border border-white transition-all duration-500">
+      <div className="flex items-center gap-3 -mb-10 -mt-5 -ms-5">
         <Image
           src={logo}
-          alt="e-kalité.mg"
-          width={200}
-          height={90}
-          className="object-cover h-20 -ml-1"
+          alt="Atero Logo"
+          width={128}
+          height={128}
+          className="h-32 w-auto transition-transform duration-300 hover:scale-105"
           priority
         />
+      </div>
+
+      {/* Titre selon l'étape */}
+      <div className="relative mb-8">
+        <hr className="border-gray-100 w-full" />
+        <p className="text-sm text-gray-500 mt-4 ml-1">
+          {step === 1 
+            ? "Créons votre compte" 
+            : "Finalisez votre inscription"}
+        </p>
       </div>
 
       {step === 1 ? (
         <form onSubmit={handleNext} className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Prénom"
-              id="prenom"
-              name="prenom"
-              placeholder="Votre prénom"
-              value={formData.prenom}
-              onChange={handleChange}
-              required
-              disabled={isLoading}
-            />
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+                Prénom
+              </label>
+              <input
+                name="prenom"
+                value={formData.prenom}
+                onChange={handleChange}
+                placeholder="Votre prénom"
+                required
+                disabled={isLoading}
+                className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+              />
+            </div>
 
-            <Input
-              label="Nom"
-              id="nom"
-              name="nom"
-              placeholder="Votre nom"
-              value={formData.nom}
+            <div>
+              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+                Nom
+              </label>
+              <input
+                name="nom"
+                value={formData.nom}
+                onChange={handleChange}
+                placeholder="Votre nom"
+                required
+                disabled={isLoading}
+                className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Adresse Email
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
+              placeholder="nom@exemple.com"
               required
               disabled={isLoading}
+              className={`appearance-none rounded-xl block w-full px-4 py-3.5 border placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all sm:text-sm ${
+                emailError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-red-500'
+              }`}
+            />
+            {emailError && <p className="mt-1 ml-1 text-xs text-red-600">{emailError}</p>}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Téléphone
+            </label>
+            <input
+              name="telephone"
+              value={formData.telephone}
+              onChange={handleChange}
+              placeholder="+261 34 12 345 67"
+              required
+              disabled={isLoading}
+              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
             />
           </div>
 
-          <Input
-            label="Email"
-            type="email"
-            id="email"
-            name="email"
-            placeholder="exemple@domaine.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-
-          <Input
-            label="Téléphone"
-            id="telephone"
-            name="telephone"
-            placeholder="+261 34 12 345 67"
-            value={formData.telephone}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-
           {errorTemp && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800/50">
+            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
               {errorTemp}
             </div>
           )}
 
-          <Button
+          <button
             type="submit"
-            className="w-full py-3.5 text-base shadow-sm transition-opacity"
             disabled={isLoading}
+            className="w-full py-3.5 px-4 text-sm font-bold rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/30 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98]"
           >
             Continuer
-          </Button>
+          </button>
         </form>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
-          
-          <Input
-            label="Identifiant unique (Attribué)"
-            id="identifiant"
-            name="identifiant"
-            value={visualIdentifier}
-            disabled={true} 
-            readOnly
-            className="bg-slate-50 font-mono text-xs opacity-80 cursor-not-allowed"
-          />
+          {/* Identifiant */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Identifiant unique (Attribué)
+            </label>
+            <input
+              value={visualIdentifier}
+              readOnly
+              disabled
+              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-gray-50 text-gray-500 font-mono text-sm cursor-not-allowed"
+            />
+          </div>
 
-          <PasswordInput
-            label="Mot de passe"
-            id="password"
-            name="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
+          {/* Mot de passe avec toggle */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Mot de passe
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                placeholder="••••••••"
+                required
+                disabled={isLoading}
+                className={`appearance-none rounded-xl block w-full px-4 py-3.5 border placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 transition-all sm:text-sm pr-12 ${
+                  passwordError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-red-500'
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {passwordError && <p className="mt-1 ml-1 text-xs text-red-600">{passwordError}</p>}
+          </div>
 
-          <Select
-            label="Genre"
-            id="genre"
-            name="genre"
-            value={formData.genre || ''}
-            onChange={handleChange}
-            options={[
-              { value: '', label: 'Non précisé' },
-              { value: 'HOMME', label: 'Homme' },
-              { value: 'FEMME', label: 'Femme' },
-              { value: 'AUTRE', label: 'Autre' },
-            ]}
-            disabled={isLoading}
-          />
+          {/* Genre */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Genre
+            </label>
+            <select
+              name="genre"
+              value={formData.genre || ''}
+              onChange={handleChange}
+              disabled={isLoading}
+              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+            >
+              <option value="">Non précisé</option>
+              <option value="HOMME">Homme</option>
+              <option value="FEMME">Femme</option>
+              <option value="AUTRE">Autre</option>
+            </select>
+          </div>
 
-          <Select
-            label="Je m'inscris en tant que"
-            id="roleId"
-            name="roleId"
-            value={formData.roleId.toString()}
-            onChange={(e) =>
-              setFormData((prev) => ({
-                ...prev,
-                roleId: Number(e.target.value) as 1 | 2,
-                vehicleType: Number(e.target.value) === 1 ? undefined : prev.vehicleType,
-                zone: Number(e.target.value) === 1 ? undefined : prev.zone,
-              }))
-            }
-            options={[
-              { value: '1', label: 'Client' },
-              { value: '2', label: 'Chauffeur' },
-            ]}
-            disabled={isLoading}
-          />
+          {/* Rôle */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+              Je m'inscris en tant que
+            </label>
+            <select
+              name="roleId"
+              value={formData.roleId.toString()}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  roleId: Number(e.target.value) as 1 | 2,
+                  vehicleType: Number(e.target.value) === 1 ? undefined : prev.vehicleType,
+                  zone: Number(e.target.value) === 1 ? undefined : prev.zone,
+                }))
+              }
+              disabled={isLoading}
+              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+            >
+              <option value="1">Client</option>
+              <option value="2">Chauffeur</option>
+            </select>
+          </div>
 
+          {/* Champs spécifiques chauffeur */}
           {isChauffeur && (
-            <div className="space-y-5 animate-in fade-in slide-in-from-top-2">
-              <Select
-                label="Type de véhicule"
-                id="vehicleType"
-                name="vehicleType"
-                value={formData.vehicleType || ''}
-                onChange={handleChange}
-                options={[
-                  { value: '', label: 'Choisir...' },
-                  { value: 'MOTO', label: 'Moto' },
-                  { value: 'VELO', label: 'Vélo' },
-                  { value: 'VOITURE', label: 'Voiture' },
-                ]}
-                required
-                disabled={isLoading}
-              />
+            <div className="space-y-5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+                  Type de véhicule
+                </label>
+                <select
+                  name="vehicleType"
+                  value={formData.vehicleType || ''}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+                >
+                  <option value="">Choisir...</option>
+                  <option value="MOTO">Moto</option>
+                  <option value="VELO">Vélo</option>
+                  <option value="VOITURE">Voiture</option>
+                </select>
+              </div>
 
-              <Input
-                label="Zone d'opération"
-                id="zone"
-                name="zone"
-                placeholder="ex: Antananarivo Centre..."
-                value={formData.zone || ''}
-                onChange={handleChange}
-                required
-                disabled={isLoading}
-              />
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
+                  Zone d'opération
+                </label>
+                <input
+                  name="zone"
+                  value={formData.zone || ''}
+                  onChange={handleChange}
+                  placeholder="ex: Antananarivo Centre..."
+                  required
+                  disabled={isLoading}
+                  className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+                />
+              </div>
             </div>
           )}
 
           {(error || errorTemp) && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800/50">
+            <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
               {error || errorTemp}
             </div>
           )}
 
           <div className="flex gap-3">
-            <Button
+            <button
               type="button"
-              variant="outline"
-              className="flex-1 py-3.5 text-base"
               onClick={() => {
                 setStep(1);
                 setErrorTemp(null);
               }}
               disabled={isLoading}
+              className="flex-1 py-3.5 px-4 text-sm font-medium rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.98]"
             >
               Retour
-            </Button>
+            </button>
 
-            <Button
+            <button
               type="submit"
-              className="flex-1 py-3.5 text-base shadow-sm"
-              disabled={isLoading}
+              disabled={isLoading || !!passwordError}
+              className="flex-1 py-3.5 px-4 text-sm font-bold rounded-xl text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-500/30 transition-all shadow-lg shadow-red-500/20 active:scale-[0.98] disabled:opacity-70"
             >
-              {isLoading ? 'Inscription...' : 'Créer mon compte'}
-            </Button>
+              {isLoading ? 'Inscription en cours...' : 'Créer mon compte'}
+            </button>
           </div>
         </form>
       )}
 
-      <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
-        Déjà un compte ?{' '}
-        <a
-          href="/login"
-          className="font-semibold text-navy hover:underline dark:text-primary"
-        >
-          Se connecter
-        </a>
-      </p>
+      {/* Lien vers connexion */}
+      <div className="text-center pt-4">
+        <p className="text-sm text-gray-500">
+          Déjà un compte ?{' '}
+          <a
+            href="/login"
+            className="font-semibold text-gray-800 hover:text-red-600 transition-colors border-b border-gray-800 hover:border-red-600 pb-0.5"
+          >
+            Se connecter
+          </a>
+        </p>
+      </div>
     </div>
   );
 };
