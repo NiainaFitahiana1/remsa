@@ -14,12 +14,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://example.com"), // ← À MODIFIER avec ton vrai domaine
 
   title: {
-    default: "e-kalité web",
+    default: "Atero | Plateforme",
     template: "%s | e-kalité web",
   },
 
   description:
-    "e-kalité web – votre plateforme / service / solution …", // ← À personnaliser
+    "Atero web platform…", // ← À personnaliser
 
 
   openGraph: {
@@ -55,16 +55,12 @@ export default function RootLayout({
 
         <link
           rel="canonical"
-          href="https://example.com" // ← À modifier avec ton vrai domaine
+          href="https://example.com" 
         />
 
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
       </head>
 
@@ -85,13 +81,28 @@ export default function RootLayout({
         <Toaster
           richColors
           position="top-center"
+          closeButton
           toastOptions={{
             classNames: {
-              toast: "border sharp-border rounded-sm",
-              title: "font-bold uppercase tracking-wider",
-              description: "text-sm",
-              success: "bg-green-50 border-green-400 text-green-900",
-              error: "bg-red-50 border-red-400 text-red-900",
+              // Toast principal : fond blanc + coins très arrondis
+              toast: 
+                "bg-white border border-outline-variant shadow-xl rounded-3xl !important",
+              title: 
+                "font-headline font-bold uppercase tracking-widest text-on-surface",
+              description: 
+                "text-on-surface-variant text-sm",
+              success: 
+                "bg-white border-tertiary text-tertiary border-l-4 border-l-tertiary",
+              error: 
+                "bg-white border-error text-error border-l-4 border-l-error",
+              warning: 
+                "bg-white border-secondary-container text-secondary-container border-l-4 border-l-secondary-container",
+              info: 
+                "bg-white border-primary text-primary border-l-4 border-l-primary",
+              actionButton: 
+                "bg-primary text-white hover:bg-primary/90 rounded-2xl",
+              cancelButton: 
+                "bg-surface-container text-on-surface-variant hover:bg-surface-container-high rounded-2xl",
             },
           }}
         />

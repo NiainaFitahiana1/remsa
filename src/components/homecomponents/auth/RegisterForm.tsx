@@ -219,7 +219,7 @@ export const RegisterForm = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                value={formData.password}
+                value={formData.password ?? ""}
                 onChange={handleChange}
                 placeholder="••••••••"
                 required

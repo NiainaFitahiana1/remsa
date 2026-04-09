@@ -1,22 +1,25 @@
 /** @type {import('next').NextConfig} */
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/auth/:path*',
-        destination: 'http://localhost:5000/auth/:path*',
+        source: "/api/auth/:path*",
+        destination: `${API_URL}/auth/:path*`,
       },
       {
-        source: '/api/deliveries/:path*',
-        destination: 'http://localhost:5000/deliveries/:path*',
+        source: "/api/deliveries/:path*",
+        destination: `${API_URL}/deliveries/:path*`,
       },
       {
-        source: '/api/users/:path*',
-        destination: 'http://localhost:5000/users/:path*',
+        source: "/api/users/:path*",
+        destination: `${API_URL}/users/:path*`,
       },
       {
-        source: '/api/:path*',
-        destination: '/api/proxy/:path*',
+        source: "/api/:path*",
+        destination: "/api/proxy/:path*",
       },
     ];
   },
@@ -24,19 +27,25 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        'localhost:3000',
-        '127.0.0.1:3000',
-        '192.168.8.108:3000',
-        '192.168.8.108',         
-        '*.192.168.8.108',       
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.8.108:3000",
       ],
     },
   },
 
   allowedDevOrigins: [
-    '192.168.8.108:3000',
-    '192.168.8.108',
+    "http://192.168.8.108:3000",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',           // Autorise tous les chemins
+      },
+    ],
+  },
 };
 
 export default nextConfig;

@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (!user?.id) return;
 
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000/notifications",
+      process.env.NEXT_PUBLIC_SOCKET_URL,
       {
         withCredentials: true,
         transports: ["websocket", "polling"],

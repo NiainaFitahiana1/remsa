@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BACKEND_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '') 
-  || 'http://localhost:5000';
+const BACKEND_BASE = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
 
 export const dynamic = 'force-dynamic';     // important pour cookies & auth
 

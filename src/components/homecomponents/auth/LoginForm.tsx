@@ -4,7 +4,7 @@ import { useLogin } from '@/hooks/useLogin';
 import Image from 'next/image';
 import logo from '@/../public/logos/logo-text.png';
 import { Eye, EyeOff } from 'lucide-react';
-
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 export const LoginForm = () => {
   const { login, isLoading, error } = useLogin();
 
@@ -33,7 +33,7 @@ export const LoginForm = () => {
   const isFormValid = email && password && !emailError && !passwordError;
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/auth/google';
+     window.location.href = `${apiUrl}/auth/google`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +111,7 @@ export const LoginForm = () => {
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
-                value={password}
+                value={password ?? ""}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
@@ -199,7 +199,7 @@ export const LoginForm = () => {
           <div className="w-full border-t border-gray-100" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-white px-4 text-gray-400">ou</span>
+          <span className=" px-4 text-gray-400">ou</span>
         </div>
       </div>
 
@@ -207,7 +207,7 @@ export const LoginForm = () => {
         type="button"
         onClick={handleGoogleLogin}
         disabled={isLoading}
-        className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white py-3.5 font-medium text-gray-700 hover:bg-gray-50 transition-all active:scale-[0.98] disabled:opacity-70"
+        className="flex w-full items-center justify-center gap-3 bg-tranparent py-3.5 font-medium text-gray-700 hover:bg-gray-50/25 -mt-5 transition-all active:scale-[0.98] disabled:opacity-70"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24">
           <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />

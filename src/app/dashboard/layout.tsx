@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
     console.log("🔌 Création d'une nouvelle connexion Socket.IO...");
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000",
+      process.env.NEXT_PUBLIC_SOCKET_URL,
       {
         withCredentials: true,
         transports: ["websocket", "polling"],

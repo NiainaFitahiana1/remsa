@@ -17,20 +17,28 @@ const Toaster = ({ ...props }: ToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg !important",
-          
-          description: "group-[.toast]:text-muted-foreground",
-          
+            "group toast group-[.toaster]:bg-surface-container-lowest group-[.toaster]:text-on-surface group-[.toaster]:border-outline-variant group-[.toaster]:shadow-xl",
+
+          description: "group-[.toast]:text-on-surface-variant",
+
           actionButton:
-            "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          
+            "group-[.toast]:bg-primary group-[.toast]:text-on-primary hover:brightness-105",
+
           cancelButton:
-            "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-          
-          success: "group-[.toast]:!bg-emerald-500 group-[.toast]:!text-white",
-          error: "group-[.toast]:!bg-red-500 group-[.toast]:!text-white",
-          warning: "group-[.toast]:!bg-amber-500 group-[.toast]:!text-white",
-          info: "group-[.toast]:!bg-blue-500 group-[.toast]:!text-white",
+            "group-[.toast]:bg-surface-container group-[.toast]:text-on-surface-variant hover:bg-surface-container-high",
+
+          // Couleurs personnalisées selon ta palette
+          success:
+            "group-[.toast]:!bg-[#6043c9] group-[.toast]:!text-white", // tertiary
+
+          error:
+            "group-[.toast]:!bg-[#ba1a1a] group-[.toast]:!text-white", // error
+
+          warning:
+            "group-[.toast]:!bg-[#fd8603] group-[.toast]:!text-white", // secondary-container (orange)
+
+          info:
+            "group-[.toast]:!bg-[#b7102a] group-[.toast]:!text-white", // primary (rouge foncé)
         },
       }}
       {...props}

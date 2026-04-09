@@ -107,3 +107,16 @@
     animation: spin 10s linear infinite;
   }
 }
+
+@import 'material-symbols';
+.kinetic-dot-grid {
+  background-image: radial-gradient(#e4bebc 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+
+/* Hero gradient (optionnel) */
+.hero-gradient {
+  background: radial-gradient(circle at top right, rgba(253, 134, 3, 0.05), transparent),
+              radial-gradient(circle at bottom left, rgba(183, 16, 42, 0.05), transparent);
+}
