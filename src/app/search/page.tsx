@@ -92,7 +92,13 @@ export default function SearchPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {offers.length > 0 ? (
                   offers.map((offer) => (
-                    <OfferCard key={offer.id} offer={offer} />
+                    <OfferCard
+                      key={offer.id}
+                      offer={{
+                        ...offer,
+                        scheduledAt: offer.scheduledAt ?? undefined,
+                      }}
+                    />
                   ))
                 ) : (
                   <div className="col-span-2 text-center py-16 text-on-surface-variant">
