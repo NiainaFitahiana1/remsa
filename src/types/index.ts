@@ -59,6 +59,15 @@ export type DeliveryStatus =
   | "DELIVERED"
   | "CANCELLED";
 
+export interface DeliveryItem {
+  id: number;
+  quantity: number;
+  subtotal: number;
+  customName?: string;
+  product?: {
+    name: string;
+  };
+}
 export interface Delivery {
   id: number;
   pickupAddress: string;
@@ -66,8 +75,15 @@ export interface Delivery {
   distanceKm?: number | null;
   price: number;
   status: DeliveryStatus;
+  items?: DeliveryItem[];
   scheduledAt?: string | null;
-  client?: { nom: string; prenom: string };
+  createdAt?: string | null;
+  commission?: number | null;
+  client?: { nom: string; prenom: string ;telephone:string,email:string;};
+  driver?: {
+    nom: string;
+    prenom: string;
+  };
 }
 
 export interface DeliveryFormData {
@@ -82,5 +98,14 @@ export type StatusConfig = {
   label: string;
   icon: string;
   allowedNext: DeliveryStatus[];
+};
+
+
+export type Product = {
+  id: number;
+  name: string;
+  price: number;
+  imageUrl?: string | null;
+  stock?: number | null;
 };
 

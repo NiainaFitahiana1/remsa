@@ -75,21 +75,27 @@ export default function DeliveryFromProductDialog({
   }>({});
 
   const GEOAPIFY_API_KEY = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY || "";
-
-  // Liste des produits à livrer
-  const itemsToDeliver = products.length > 0 ? products : product ? [product] : [];
+  const itemsToDeliver = useMemo(() => {
+    return products.length > 0 ? products : product ? [product] : [];
+  }, [products, product]);
 
   // Initialiser les quantités à 1 pour chaque produit quand le dialog s'ouvre
   useEffect(() => {
-    if (open && itemsToDeliver.length > 0) {
-      const initialQuantities: Record<number, number> = {};
-      itemsToDeliver.forEach((p) => {
-        initialQuantities[p.id] = 1;
-      });
-      setQuantities(initialQuantities);
-    }
-  }, [open, itemsToDeliver]);
+    // On n'initialise que si le dialog s'ouvre ET que les quantités n'existent pas encore
+    if (!open || itemsToDeliver.length === 0) return;
 
+    setQuantities((prev) => {
+      // Si on a déjà des quantités pour ces produits, on ne touche à rien
+      const alreadyInitialized = itemsToDeliver.every(p => prev[p.id] !== undefined);
+      if (alreadyInitialized) return prev;
+
+      const initial: Record<number, number> = {};
+      itemsToDeliver.forEach((p) => {
+        initial[p.id] = 1;
+      });
+      return initial;
+    });
+  }, [open, itemsToDeliver]);
   // Calcul du prix total dynamique
   const totalPrice = useMemo(() => {
     return itemsToDeliver.reduce((sum, product) => {
@@ -103,11 +109,28 @@ export default function DeliveryFromProductDialog({
     return (totalPrice + deliveryFee).toFixed(2);
   }, [totalPrice]);
 
-  const handleQuantityChange = (productId: number, value: string) => {
-    const numValue = Math.max(1, Number(value) || 1);
-    setQuantities((prev) => ({ ...prev, [productId]: numValue }));
-  };
+  const handleQuantityChange = (productId: number, newValue: number | string) => {
+    // 1. Conversion propre en nombre
+    let numValue = typeof newValue === "string" ? parseInt(newValue, 10) : newValue;
 
+    // 2. Si la saisie est vide ou invalide (NaN), on met 1 par défaut
+    if (isNaN(numValue) || numValue < 1) {
+      numValue = 1;
+    }
+
+    // 3. Récupération du stock réel pour CE produit
+    const currentProduct = itemsToDeliver.find((p) => p.id === productId);
+    const maxStock = currentProduct?.stock ?? 999;
+
+    // 4. On s'assure de ne pas dépasser le stock
+    const validatedValue = Math.min(numValue, maxStock);
+
+    // 5. Mise à jour de l'état
+    setQuantities((prev) => ({ 
+      ...prev, 
+      [productId]: validatedValue 
+    }));
+  };
   const handleManualChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -302,16 +325,40 @@ export default function DeliveryFromProductDialog({
                   </div>
 
                   <div className="w-32">
-                    <Label htmlFor={`qty-${p.id}`} className="text-xs">Quantité</Label>
-                    <Input
-                      id={`qty-${p.id}`}
-                      type="number"
-                      min={1}
-                      max={p.stock || 999}
-                      value={quantities[p.id] || 1}
-                      onChange={(e) => handleQuantityChange(p.id, e.target.value)}
-                      className="mt-1"
-                    />
+                    <div className="w-32 flex flex-col items-center gap-2">
+                      <Label className="text-xs">Quantité</Label>
+                      <div className="flex items-center border rounded-md">
+                        {/* Bouton Moins */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 px-0"
+                          onClick={() => handleQuantityChange(p.id, (quantities[p.id] || 1) - 1)}
+                        >
+                          -
+                        </Button>
+
+                        <Input
+                          type="number"
+                          className="h-8 w-12 border-0 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          value={quantities[p.id] || 1}
+                          onChange={(e) => handleQuantityChange(p.id, e.target.value)}
+                          onWheel={(e) => e.currentTarget.blur()} // Empêche le changement au scroll souris
+                        />
+
+                        {/* Bouton Plus */}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 px-0"
+                          onClick={() => handleQuantityChange(p.id, (quantities[p.id] || 1) + 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="text-right w-24">
@@ -394,7 +441,7 @@ export default function DeliveryFromProductDialog({
                   name="price"
                   type="number"
                   step="0.01"
-                  value={form.price || suggestedTotalPrice}
+                  value={form.price !== "" ? form.price : suggestedTotalPrice}
                   onChange={handleManualChange}
                 />
               </div>

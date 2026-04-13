@@ -1,4 +1,7 @@
 /** @type {import('next').NextConfig} */
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 const nextConfig = {
   async headers() {
     return [
@@ -24,20 +27,20 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/api/auth/:path*',
-        destination: 'https://qr-valid.onrender.com/auth/:path*',
+        source: "/api/auth/:path*",
+        destination: `${API_URL}/auth/:path*`,
       },
       {
-        source: '/api/deliveries/:path*',
-        destination: 'https://qr-valid.onrender.com/deliveries/:path*',
+        source: "/api/deliveries/:path*",
+        destination: `${API_URL}/deliveries/:path*`,
       },
       {
-        source: '/api/users/:path*',
-        destination: 'https://qr-valid.onrender.com/users/:path*',
+        source: "/api/users/:path*",
+        destination: `${API_URL}/users/:path*`,
       },
       {
-        source: '/api/:path*',
-        destination: '/api/proxy/:path*',
+        source: "/api/:path*",
+        destination: "/api/proxy/:path*",
       },
     ];
   },
@@ -45,15 +48,25 @@ const nextConfig = {
   experimental: {
     serverActions: {
       allowedOrigins: [
-        'remsa.vercel.app',
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.8.108:3000",
       ],
     },
   },
 
   allowedDevOrigins: [
-    '192.168.8.108:3000',
-    '192.168.8.108',
+    "http://192.168.8.108:3000",
   ],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',           // Autorise tous les chemins
+      },
+    ],
+  },
 };
 
 export default nextConfig;
