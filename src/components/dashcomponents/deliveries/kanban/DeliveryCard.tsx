@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SendDeliveryRequestModal } from "../modal/SendDeliveryRequestModal";
 import Link from "next/link";
 import { QRCodeSVG } from "qrcode.react"; 
+import { Pin } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Loader2, QrCode } from "lucide-react";
-
+import { toast } from "@/components/ui/sonner";
 type DeliveryCardProps = {
   delivery: Delivery;
   isBeingDragged: boolean;
@@ -47,6 +48,27 @@ export function DeliveryCard({
       console.error("Erreur tokens:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+  const [isPinning, setIsPinning] = useState(false);
+  const handlePin = async () => {
+    setIsPinning(true);
+    try {
+      const response = await fetch(`/api/deliveries/${delivery.id}/epingled`, {
+        method: "PATCH",
+      });
+
+      if (response.ok) {
+        toast.success("Livraison épinglée avec succès 📌");
+      } else {
+        const error = await response.json();
+        toast.error(error.message || "Erreur lors de l'épinglage");
+      }
+    } catch (error) {
+      console.error("Erreur épinglage:", error);
+      toast.error("Erreur serveur");
+    } finally {
+      setIsPinning(false);
     }
   };
 
@@ -103,57 +125,75 @@ export function DeliveryCard({
           </Link>
 
           {/* MODAL QR CODES */}
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={fetchTokens}
+
+          <div className="flex gap-2">
+             <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePin}
+                disabled={isPinning}
                 className="h-8 gap-2 border-primary/20 hover:border-primary/50"
               >
-                <QrCode className="h-4 w-4" />
-                QR Codes
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[400px]">
-              <DialogHeader>
-                <DialogTitle className="text-center">Validation Livraison #{delivery.id}</DialogTitle>
-              </DialogHeader>
-              
-              <div className="flex flex-col gap-4 py-4">
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                ) : tokens.length > 0 ? (
-                  tokens.map((t) => (
-                    <div key={t.id} className="flex flex-col items-center p-4 border rounded-xl bg-muted/30">
-                      <p className="text-xs font-black uppercase mb-3 tracking-widest text-muted-foreground">
-                        Code {t.type === "PICKUP" ? "de Ramassage" : "de Livraison"}
-                      </p>
-                      
-                      <div className="bg-white p-3 rounded-lg shadow-sm border">
-                        <QRCodeSVG 
-                          value={t.token} 
-                          size={160}
-                          level="H" // Haute correction d'erreur pour faciliter le scan
-                          includeMargin={false}
-                        />
-                      </div>
-                      
-                      <p className="mt-3 text-[10px] font-mono text-muted-foreground bg-white px-2 py-1 rounded border">
-                        {t.token}
-                      </p>
-                    </div>
-                  ))
+                {isPinning ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground italic">
-                    Aucun token de vérification généré.
-                  </div>
+                  <Pin className="h-4 w-4" />
                 )}
-              </div>
-            </DialogContent>
-          </Dialog>
+                Épingler
+              </Button>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={fetchTokens}
+                  className="h-8 gap-2 border-primary/20 hover:border-primary/50"
+                >
+                  <QrCode className="h-4 w-4" />
+                  QR Codes
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[400px]">
+                <DialogHeader>
+                  <DialogTitle className="text-center">Validation Livraison #{delivery.id}</DialogTitle>
+                </DialogHeader>
+                
+                <div className="flex flex-col gap-4 py-4">
+                  {isLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : tokens.length > 0 ? (
+                    tokens.map((t) => (
+                      <div key={t.id} className="flex flex-col items-center p-4 border rounded-xl bg-muted/30">
+                        <p className="text-xs font-black uppercase mb-3 tracking-widest text-muted-foreground">
+                          Code {t.type === "PICKUP" ? "de Ramassage" : "de Livraison"}
+                        </p>
+                        
+                        <div className="bg-white p-3 rounded-lg shadow-sm border">
+                          <QRCodeSVG 
+                            value={t.token} 
+                            size={160}
+                            level="H" // Haute correction d'erreur pour faciliter le scan
+                            includeMargin={false}
+                          />
+                        </div>
+                        
+                        <p className="mt-3 text-[10px] font-mono text-muted-foreground bg-white px-2 py-1 rounded border">
+                          {t.token}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground italic">
+                      Aucun token de vérification généré.
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <SendDeliveryRequestModal delivery={delivery}>

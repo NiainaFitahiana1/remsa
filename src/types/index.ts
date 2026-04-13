@@ -109,3 +109,22 @@ export type Product = {
   stock?: number | null;
 };
 
+
+export interface DeliveryOffer {
+  id: number;
+  pickupAddress: string;
+  dropAddress: string;
+  price: number | string;
+  distanceKm?: number | string;
+  status: string;
+  scheduledAt?: string | null;     // ← null autorisé (ce qui pose problème actuellement)
+  createdAt: string;
+  client?: {
+    nom: string;
+    prenom: string;
+  };
+  items?: Array<{
+    product?: { name: string };
+    quantity: number;
+  }>;
+}

@@ -185,7 +185,7 @@ export const LoginForm = () => {
         <p className="text-sm text-gray-500">
           Pas encore de compte ?{' '}
           <a
-            href="register.html"
+            href="/register"
             className="font-semibold text-gray-800 hover:text-red-600 transition-colors border-b border-gray-800 hover:border-red-600 pb-0.5"
           >
             Créer un compte

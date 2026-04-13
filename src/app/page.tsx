@@ -4,8 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
-
-const heroUrl= "@/../public/ivi.webp";
+import heroImage from "@/../public/ivi.webp";
 
 export default function HomePage() {
   return (
@@ -59,24 +58,14 @@ export default function HomePage() {
                     {/* Option 1 : Image via Next/Image (recommandé) */}
                     
                     <Image 
-                      src={heroUrl} 
+                      src={heroImage} 
                       alt="Illustration logistique en temps réel - Camion et réseau connecté"
                       fill 
                       className="object-cover"
                       priority
                     />
                    
-
-                    {/* Option 2 : Placeholder visuel en attendant ton illustration */}
-                    {/* <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-[120px] mb-6 opacity-20">🚛</div>
-                        <p className="text-2xl font-headline tracking-widest text-on-surface/40">
-                          KINETIC<br />NETWORK
-                        </p>
-                        <div className="mt-8 w-40 h-1 bg-gradient-to-r from-primary to-tertiary mx-auto rounded-full" />
-                      </div>
-                    </div> */}
+                   
                   </div>
 
                   {/* Effet décoratif optionnel */}
