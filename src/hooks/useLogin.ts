@@ -25,11 +25,11 @@ export function useLogin() {
       setError(null);
 
       try {
-        // 🔹 1️⃣ Login POST
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+        // Login via le proxy Next.js (recommandé en production)
+        const response = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          credentials: "include", // cookies httpOnly
+          credentials: "include",
           body: JSON.stringify({ email, password }),
         });
 
@@ -38,13 +38,13 @@ export function useLogin() {
           try {
             const data = await response.json();
             message = data.message || message;
-          } catch {
-          }
+          } catch {}
           setError(message);
           return { success: false, error: message };
         }
 
-        const userRes = await fetch(`/api/auth/me`, {
+        // Récupération du profil utilisateur via le proxy
+        const userRes = await fetch("/api/auth/me", {
           method: "GET",
           credentials: "include",
         });
@@ -74,7 +74,6 @@ export function useLogin() {
         toast.success("Connexion réussie");
 
         return { success: true };
-
       } catch (err) {
         const errorMessage =
           err instanceof Error
