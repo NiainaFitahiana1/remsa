@@ -1,44 +1,58 @@
-"use client";
+import ProductListClient from '@/components/dashcomponents/product/ProductListClient';
+import { cookies } from 'next/headers';
 
-import { useState } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import ProductList from "@/components/dashcomponents/product/ProductList";
-const productStats = [
-  { category: "Électronique", count: 48, revenue: 12480 },
-  { category: "Vêtements", count: 95, revenue: 7580 },
-  { category: "Maison", count: 62, revenue: 9430 },
-  { category: "Beauté", count: 37, revenue: 4120 },
-  { category: "Alimentation", count: 19, revenue: 2380 },
-];
+type Product = {
+  id: number;
+  name: string;
+  description?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  stock?: number | null;
+  isActive: boolean;
+  createdAt: string;
+  createdBy?: {
+    id: number;
+    email: string;
+    nom?: string;
+  };
+};
 
-const topProducts = [
-  { name: "Écouteurs sans fil", sold: 124, revenue: 3720, stock: 18 },
-  { name: "T-shirt oversize", sold: 89, revenue: 2314, stock: 42 },
-  { name: "Lampe LED connectée", sold: 67, revenue: 2680, stock: 8 },
-  { name: "Crème hydratante", sold: 54, revenue: 1620, stock: 31 },
-  { name: "Cahier spirale A5", sold: 48, revenue: 960, stock: 65 },
-];
+export const dynamic = 'force-dynamic'; 
 
-const COLORS = ["#e73645", "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+export default async function ProductsPage() {
+  let products: Product[] = [];
+  let error: string | null = null;
 
-export default function ProductsPage() {
-  const [period] = useState("Février 2026"); // tu peux le rendre dynamique plus tard
+  try {
+    const cookieStore = cookies();
+    const cookieHeader = cookieStore.toString();
 
-  const totalProducts = topProducts.reduce((sum, p) => sum + p.sold, 0);
-  const totalRevenue = topProducts.reduce((sum, p) => sum + p.revenue, 0);
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+      headers: {
+        Cookie: cookieHeader,
+      },
+      cache: 'no-store',
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) throw new Error('Session expirée');
+      if (res.status === 403) throw new Error('Accès non autorisé');
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.message || 'Erreur lors du chargement des produits');
+    }
+
+    products = await res.json();
+  } catch (err: any) {
+    error = err.message || 'Erreur serveur inattendue';
+  }
 
   return (
     <div className="min-h-screen text-secondary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <ProductList/>
+        <ProductListClient 
+          initialProducts={products} 
+          initialError={error} 
+        />
       </div>
     </div>
   );
