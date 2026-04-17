@@ -1,5 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertCircle, Package, RefreshCw, Truck } from "lucide-react";
-import { toast } from "sonner"; // ← Import ajouté
+import { toast } from "sonner";
 
 import ProductDialog from "./ProductCreateDialog";
 import DeliveryFromProductDialog from "../deliveries/kanban/DeliveryFromProductDialog";
@@ -40,22 +41,27 @@ export default function ProductList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const fetchProducts = async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     setError(null);
+    setIsRefreshing(true);
+
     try {
       const res = await fetch("/api/products", {
         credentials: "include",
         cache: "no-store",
-        headers: { "Cache-Control": "no-cache" },
+        headers: {
+          "Cache-Control": "no-cache",
+        },
       });
 
       if (!res.ok) {
-        if (res.status === 401) throw new Error("Session expirée");
+        if (res.status === 401) throw new Error("Session expirée, veuillez vous reconnecter");
         if (res.status === 403) throw new Error("Accès non autorisé");
-        const err = await res.json();
-        throw new Error(err.message || "Erreur lors du chargement");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Erreur lors du chargement des produits");
       }
 
       const data = await res.json();
@@ -63,16 +69,18 @@ export default function ProductList() {
       setSelectedProducts([]);
     } catch (err: any) {
       setError(err.message || "Erreur inattendue");
+      console.error(err);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProducts();
   }, []);
 
-  // Gestion sélection
+  // Chargement initial
+  useEffect(() => {
+    fetchProducts(true);
+  }, [fetchProducts]);
+
   const toggleSelectAll = () => {
     if (selectedProducts.length === products.length) {
       setSelectedProducts([]);
@@ -93,6 +101,7 @@ export default function ProductList() {
     selectedProducts.includes(p.id)
   );
 
+  // Skeleton avec timeout visuel (max 8 secondes)
   if (loading) {
     return (
       <div className="space-y-4">
@@ -115,23 +124,24 @@ export default function ProductList() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Array(8)
-                .fill(0)
-                .map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-6 w-6" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-48" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-9 w-28 ml-auto" /></TableCell>
-                  </TableRow>
-                ))}
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell><Skeleton className="h-6 w-6" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-48" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-full" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-9 w-28 ml-auto" /></TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
         </div>
+        <p className="text-center text-sm text-muted-foreground">
+          Chargement des produits...
+        </p>
       </div>
     );
   }
@@ -143,7 +153,7 @@ export default function ProductList() {
         <AlertTitle>Erreur</AlertTitle>
         <AlertDescription className="flex items-center justify-between gap-4">
           {error}
-          <Button variant="outline" size="sm" onClick={fetchProducts}>
+          <Button variant="outline" size="sm" onClick={() => fetchProducts(true)}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Réessayer
           </Button>
@@ -158,19 +168,20 @@ export default function ProductList() {
         <h2 className="text-2xl font-bold tracking-tight">Mes produits & Marketplace</h2>
 
         <div className="flex gap-3">
-         <ProductDialog 
+          <ProductDialog 
             mode="create" 
             onProductCreated={(newProduct) => {
               setProducts((prev) => [newProduct, ...prev]);
             }}
           />
+
           {selectedProducts.length > 0 && (
             <DeliveryFromProductDialog
               products={selectedProductsData}
               onSuccess={() => {
                 toast.success(`Livraison créée avec ${selectedProducts.length} produit${selectedProducts.length > 1 ? 's' : ''}`);
                 setSelectedProducts([]);
-                fetchProducts();
+                fetchProducts(false);
               }}
             >
               <Button variant="default" className="gap-2">
@@ -179,6 +190,16 @@ export default function ProductList() {
               </Button>
             </DeliveryFromProductDialog>
           )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchProducts(false)}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
         </div>
       </div>
 
@@ -192,9 +213,7 @@ export default function ProductList() {
           <div className="mt-6">
             <ProductDialog 
               mode="create" 
-              onProductCreated={(newProduct) => {
-                setProducts((prev) => [newProduct, ...prev]);
-              }}
+              onProductCreated={(newProduct) => setProducts((prev) => [newProduct, ...prev])}
             />
           </div>
         </div>
@@ -205,10 +224,7 @@ export default function ProductList() {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={
-                      selectedProducts.length === products.length &&
-                      products.length > 0
-                    }
+                    checked={selectedProducts.length === products.length && products.length > 0}
                     onCheckedChange={toggleSelectAll}
                     aria-label="Tout sélectionner"
                   />
@@ -246,7 +262,9 @@ export default function ProductList() {
                               src={product.imageUrl}
                               alt={product.name}
                               className="w-full h-full object-cover"
-                              onError={(e) => ((e.target as HTMLImageElement).style.display = "none")}
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -273,9 +291,7 @@ export default function ProductList() {
                         <span className={product.stock <= 0 ? "text-red-600 font-medium" : ""}>
                           {product.stock}
                         </span>
-                      ) : (
-                        "—"
-                      )}
+                      ) : "—"}
                     </TableCell>
 
                     <TableCell>
@@ -303,7 +319,7 @@ export default function ProductList() {
                           product={product}
                           onSuccess={() => {
                             toast.success("Livraison créée avec succès");
-                            fetchProducts();
+                            fetchProducts(false);
                           }}
                           disabled={product.stock != null && product.stock <= 0}
                         />
