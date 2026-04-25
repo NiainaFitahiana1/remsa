@@ -1,40 +1,23 @@
 # TABLEAU RÉCAPITULATIF — PLATEFORME LIVRAISON
 
-| MODULE | ✔ DÉJÀ FAIT | ⚠ À CORRIGER | 🔧 À AMÉLIORER | ➕ À FAIRE | ❌ À ENLEVER |
-| ------ | ----------- | ------------ | -------------- | --------- | ----------- |
-
-| AUTH | Login/Register (Google + classique) | Pas de vérification email | UX login + erreurs | Reset password | - |
-| ADMIN | Seed admin + gestion user | Pas de logs admin | Interface admin | Audit trail | - |
-
-| HOMEPAGES | Pages existantes | ❗ UI nul / incohérent | Design system (layout, couleurs) | Refaire landing claire | Supprimer pages inutiles |
-
-| CODEBASE | Fonctionnel globalement | ❗ Code mal structuré | Modularisation (services, modules) | Clean architecture | Code dupliqué |
-
-| PRODUIT | CRUD OK | Listener manquant | Gestion stock auto | Event system | - |
-
-| LIVRAISON CLIENT | Création livraison | ❗ Geoapify cassé | Validation adresse | Fallback API + cache | - |
-
-| MATCHING LIVREUR | Suggestion envoyée | Logique faible | Priorisation (distance, rating) | Auto-assign | - |
-
-| LIVREUR DASHBOARD | Liste demandes | UX pauvre | Filtres + tri | Dashboard complet | - |
-
-| CANDIDATURE | Accept / Refuse | ❗ incomplet | - | ➕ POSTULER à annonce (IMPORTANT) | - |
-
-| FLOW LIVRAISON | Statuts existants | ❗ transitions non sécurisées | Timeline visuelle | Verrou logique complet | - |
-
-| QR CODE | Généré (pickup + drop) | ❗ pas sécurisé | Ajout expiration | QR signé + OTP combo | Ancienne logique simple |
-
-| NOTIFICATIONS | WebSocket (création) | ❗ incomplet | Temps réel enrichi | Voir tableau sockets | - |
-
-| GÉOLOCALISATION | Intégré | ❗ cassé | Optimisation | fallback + stockage coords | - |
-
-| SÉCURITÉ | Base OK | QR faible | Protection API | Rate limit + logs | - |
-
-| UX GLOBAL | Existe | ❗ incohérent | Design system | Mobile-first UX | UI inutile |
-
-| PERFORMANCE | - | - | Index DB | Cache + queue | - |
-
----
+| MODULE            | ✔ DÉJÀ FAIT                         | ⚠ À CORRIGER                | 🔧 À AMÉLIORER       | ➕ À FAIRE          | ❌ À ENLEVER      |
+| ----------------- | ----------------------------------- | --------------------------- | -------------------- | ------------------ | ---------------- |
+| AUTH              | Login/Register (Google + classique) | ❗ Pas de vérification email | UX + gestion erreurs | Reset password     | -                |
+| ADMIN             | Seed admin + gestion user           | ❗ Pas de logs               | Interface admin      | Audit trail        | -                |
+| HOMEPAGES         | Pages existantes                    | ❗ UI incohérente            | Design system        | Landing propre     | Pages inutiles   |
+| CODEBASE          | Fonctionnel                         | ❗ Mal structuré             | Modularisation       | Clean architecture | Code dupliqué    |
+| PRODUIT           | CRUD OK                             | ❗ Listener manquant         | Gestion stock        | Event system       | -                |
+| LIVRAISON CLIENT  | Création OK (cassé actuellement)    | ❗ Geo API HS                | Validation adresse   | Fallback + cache   | -                |
+| MATCHING LIVREUR  | Suggestion envoyée                  | ❗ Logique faible            | Priorisation         | Auto-assign        | -                |
+| LIVREUR DASHBOARD | Liste demandes                      | ❗ UX pauvre                 | Filtres/tri          | Dashboard complet  | -                |
+| CANDIDATURE       | Accept/Refuse                       | ❗ Incomplet                 | -                    | ➕ Postuler         | -                |
+| FLOW LIVRAISON    | Statuts existants                   | ❗ Non sécurisé              | Timeline             | Verrou logique     | -                |
+| QR CODE           | Généré                              | ❗ Non sécurisé              | Expiration           | QR signé + OTP     | Ancienne logique |
+| NOTIFICATIONS     | WebSocket partiel                   | ❗ Incomplet                 | Temps réel           | Sockets complets   | -                |
+| GÉOLOCALISATION   | Intégré                             | ❗ Cassé                     | Optimisation         | Fallback coords    | -                |
+| SÉCURITÉ          | Base OK                             | ❗ QR faible                 | Protection API       | Rate limit + logs  | -                |
+| UX GLOBAL         | Présent                             | ❗ Incohérent                | Design system        | Mobile-first       | UI inutile       |
+| PERFORMANCE       | -                                   | -                           | Index DB             | Cache + queue      | -                |
 
 ## PARTIE LIVREUR — NOUVELLE LOGIQUE IMPORTANTE
 
