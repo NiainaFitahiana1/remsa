@@ -10,16 +10,22 @@ const nextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value:
-              "default-src 'self'; " +
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'; " +
-              "style-src 'self' 'unsafe-inline'; " +
-              "img-src 'self' data: blob: https:; " +
-              "font-src 'self' data: https:; " +
-              `connect-src 'self' https://*.vercel.app ${process.env.NEXT_PUBLIC_API_URL}; ` +
-              "frame-src 'self';",
+            value: `
+              default-src 'self';
+              connect-src 'self' 
+                https://api.geoapify.com 
+                http://localhost:5000 
+                https://*.vercel.app 
+                ws://localhost:5000 
+                wss://*.vercel.app;
+              script-src 'self' 'unsafe-inline' 'unsafe-eval';
+              style-src 'self' 'unsafe-inline';
+              img-src 'self' data: https:;
+
+              font-src 'self' https: data:;
+            `.replace(/\s+/g, ' ').trim()
           },
-        ],
+        ]
       },
     ];
   },

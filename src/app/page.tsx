@@ -1,10 +1,12 @@
+"use client";
+
 import TopAppBar from "@/components/search/ui/Topbar";
 import Footer from "@/components/search/ui/Footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Image from "next/image";
-import heroImage from "@/../public/ivi.webp";
+import heroImage from "@/../public/illustrations/ivi.png";
 
 export default function HomePage() {
   return (
@@ -53,7 +55,7 @@ export default function HomePage() {
               <div className="lg:col-span-5 hidden md:block">
                 <div className="relative">
                   {/* Remplace cette div par ton image ou illustration */}
-                  <div className="aspect-square lg:aspect-[4/3.5] bg-gradient-to-br from-primary/10 via-secondary-container/10 to-tertiary/10 rounded-3xl overflow-hidden border border-outline-variant/30 shadow-2xl">
+                  <div className="aspect-square lg:aspect-[4/auto] -mt-16">
                     
                     {/* Option 1 : Image via Next/Image (recommandé) */}
                     
@@ -61,7 +63,7 @@ export default function HomePage() {
                       src={heroImage} 
                       alt="Illustration logistique en temps réel - Camion et réseau connecté"
                       fill 
-                      className="object-cover"
+                      className="object-contain"
                       priority
                     />
                    
@@ -72,53 +74,6 @@ export default function HomePage() {
                   <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Opportunité / Pourquoi Atero */}
-        <section className="py-20 bg-surface-container-lowest">
-          <div className="max-w-[1440px] mx-auto px-8">
-            <div className="text-center mb-16">
-              <h2 className="font-headline text-4xl font-bold tracking-tight mb-4">
-                L’opportunité Kinetic
-              </h2>
-              <p className="text-on-surface-variant text-lg max-w-2xl mx-auto">
-                Ne perdez plus de temps à chercher un transporteur fiable. 
-                Atero Kinetic vous connecte en quelques secondes au bon véhicule, au bon prix, au bon moment.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              <Card className="p-8 hover:shadow-xl transition-all group">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-                  ⚡
-                </div>
-                <h3 className="font-headline text-2xl font-bold mb-3">Instantané</h3>
-                <p className="text-on-surface-variant">
-                  Des milliers d’offres en temps réel. Trouvez un transport en moins de 60 secondes.
-                </p>
-              </Card>
-
-              <Card className="p-8 hover:shadow-xl transition-all group">
-                <div className="w-14 h-14 rounded-2xl bg-secondary-container/10 flex items-center justify-center mb-6 group-hover:bg-secondary-container/20 transition-colors">
-                  📍
-                </div>
-                <h3 className="font-headline text-2xl font-bold mb-3">Traçabilité Totale</h3>
-                <p className="text-on-surface-variant">
-                  Suivi GPS en direct, ETA précis, alertes automatiques et preuve de livraison.
-                </p>
-              </Card>
-
-              <Card className="p-8 hover:shadow-xl transition-all group">
-                <div className="w-14 h-14 rounded-2xl bg-tertiary/10 flex items-center justify-center mb-6 group-hover:bg-tertiary/20 transition-colors">
-                  💰
-                </div>
-                <h3 className="font-headline text-2xl font-bold mb-3">Meilleur Prix</h3>
-                <p className="text-on-surface-variant">
-                  Mise en concurrence automatique des transporteurs. Économisez jusqu’à 28% sur vos transports.
-                </p>
-              </Card>
             </div>
           </div>
         </section>

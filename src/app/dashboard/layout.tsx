@@ -47,21 +47,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     }
 
     console.log("🔌 Création d'une nouvelle connexion Socket.IO...");
-    const socketInstance = io(
-      process.env.NEXT_PUBLIC_SOCKET_URL,
-      {
-        withCredentials: true,
-        transports: ["websocket", "polling"],
-      }
-    );
-
-    socketRef.current = socketInstance;
-
-    socketInstance.on("connect", () => {
-      console.log("✅ SOCKET CONNECTÉ avec succès ! ID:", socketInstance.id);
-      socketInstance.emit("joinNotifications", user.id);
+    const socketInstance = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
+      withCredentials: true,
+      transports: ["polling", "websocket"],   // polling en premier = important
+      timeout: 20000,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
+    socketInstance.on("connect_error", (err: any) => {
+      console.error("❌ Socket connect_error:", err.message);
+      console.dir(err);
+    });
+
+    socketInstance.on("connect", () => {
+      console.log("✅ SOCKET CONNECTÉ ! ID =", socketInstance.id);
+    });
     socketInstance.on("disconnect", (reason) => {
       console.log("❌ SOCKET DÉCONNECTÉ - Raison:", reason);
     });
@@ -72,10 +73,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       setUnreadCount((prev) => prev + 1);
     });
 
-    // Optionnel : voir les erreurs
-    socketInstance.on("connect_error", (err) => {
-      console.error("⚠️ Erreur de connexion Socket :", err.message);
+   socketInstance.on("connect_error", (err: any) => {
+    console.error("⚠️ Erreur de connexion Socket :", err.message);
+    
+    // Logging détaillé sécurisé
+    console.error("🔍 Détails complets de l'erreur :", {
+      message: err.message,
+      description: err.description,
+      context: err.context,
+      type: err.type,
+      transport: err.transport,
+      code: err.code,
     });
+
+    // Version encore plus complète (très utile)
+    console.dir(err);           // Affiche tout l'objet dans la console
+  });
 
     return () => {
       console.log("🧹 Nettoyage du socket...");
