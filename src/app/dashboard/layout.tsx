@@ -99,7 +99,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
 
-  // ====================== CHARGEMENT INITIAL DES NOTIFICATIONS ======================
   useEffect(() => {
     if (!user?.id) return;
 
@@ -119,7 +118,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     fetchNotifications();
   }, [user?.id]);
 
-  // ====================== MISE À JOUR DU COMPTEUR ======================
   useEffect(() => {
     const unread = notifications.filter((n) => !n.isRead).length;
     setUnreadCount(unread);

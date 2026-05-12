@@ -1,11 +1,12 @@
 interface StatsCardProps {
   title: string;
-  value: string;
+  value: string | number;
   icon: string;
   trend: string;
   trendColor: "emerald" | "amber";
   iconOnlyTrend?: boolean;
   warning?: boolean;
+  className?: string;
 }
 
 export default function StatsCard({
@@ -16,6 +17,7 @@ export default function StatsCard({
   trendColor,
   iconOnlyTrend = false,
   warning = false,
+  className="",
 }: StatsCardProps) {
   const trendTextColor = trendColor === "amber" ? "text-amber-600" : "text-emerald-600";
 

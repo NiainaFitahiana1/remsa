@@ -17,14 +17,15 @@ type Product = {
   };
 };
 
-export const dynamic = 'force-dynamic'; 
+export const dynamic = 'force-dynamic';
 
 export default async function ProductsPage() {
   let products: Product[] = [];
   let error: string | null = null;
 
   try {
-    const cookieStore = cookies();
+    // ✅ Correction ici
+    const cookieStore = await cookies();           // ← Await obligatoire
     const cookieHeader = cookieStore.toString();
 
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
@@ -37,6 +38,7 @@ export default async function ProductsPage() {
     if (!res.ok) {
       if (res.status === 401) throw new Error('Session expirée');
       if (res.status === 403) throw new Error('Accès non autorisé');
+      
       const errData = await res.json().catch(() => ({}));
       throw new Error(errData.message || 'Erreur lors du chargement des produits');
     }
@@ -44,6 +46,7 @@ export default async function ProductsPage() {
     products = await res.json();
   } catch (err: any) {
     error = err.message || 'Erreur serveur inattendue';
+    console.error("Erreur ProductsPage:", err);
   }
 
   return (

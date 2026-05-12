@@ -2,138 +2,198 @@
 
 import Greeting from "@/components/dashcomponents/Greeting";
 import StatsCard from "@/components/dashcomponents/StatsCard";
-import UrgentRequestCard from "@/components/dashcomponents/UrgentRequestCard";
-import PremiumGuide from "@/components/dashcomponents/PremiumGuide";
-import PlatformUpdateItem from "@/components/dashcomponents/PlatformUpdateItem";
 import { useCurrentUser } from "@/lib/auth/use-current-user";
+import { useDeliveries } from "@/hooks/deliveries/useDeliveries";
+import { useProducts } from "@/hooks/products/useProducts";
+
+// Shadcn UI
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Eye, Truck, Loader2 } from "lucide-react";
 
 export default function DashboardPage() {
+  const { user, loading: userLoading, error: userError } = useCurrentUser();
+  const { deliveries, count, loading: deliveriesLoading } = useDeliveries();
+  const { count_product } = useProducts();
 
- const { user, loading, error } = useCurrentUser();
+  // Filtrer uniquement les livraisons ACCEPTED
+  const acceptedDeliveries = deliveries.filter(
+    (d) => d.status === "ACCEPTED" || d.status?.toUpperCase() === "ACCEPTED"
+  );
 
-  if (loading) return <div>Chargement...</div>;
-  if (error || !user) return <div>Vous devez être connecté</div>;
+  // ==================== SKELETON LOADING ====================
+  if (userLoading) {
+    return (
+      <div className="p-4 lg:p-6 space-y-8">
+        {/* Greeting Skeleton */}
+        <div className="p-4 lg:p-6">
+          <Skeleton className="h-8 w-64" />
+        </div>
 
+        {/* Stats Skeletons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 lg:px-6">
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="bg-card border rounded-xl p-6">
+              <Skeleton className="h-5 w-24 mb-4" />
+              <Skeleton className="h-10 w-28 mb-3" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          ))}
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="mt-8 px-4 lg:px-6">
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-7 w-64" />
+            <Skeleton className="h-9 w-32" />
+          </div>
+
+          <div className="rounded-xl border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {[...Array(8)].map((_, i) => (
+                    <TableHead key={i}>
+                      <Skeleton className="h-4 w-20" />
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(5)].map((_, i) => (
+                  <TableRow key={i}>
+                    {[...Array(8)].map((_, j) => (
+                      <TableCell key={j}>
+                        <Skeleton className="h-6 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (userError || !user) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-red-500">Vous devez être connecté pour accéder au dashboard.</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <div className="p-4 lg:p-6">
-        {user ? <Greeting name={user?.role} /> : <span>Utilisateur non trouvé</span>}
+        <Greeting />
       </div>
 
       {/* Statistiques */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-4 lg:px-6">
         <StatsCard
-          title="Daily Earnings"
-          value="$142.50"
-          icon="payments"
+          title="Livraisons"
+          value={count}
+          icon="local_shipping"
           trend="+15% vs yesterday"
           trendColor="emerald"
         />
         <StatsCard
-          title="Completed"
-          value="12"
-          icon="local_shipping"
+          title="Produits"
+          value={count_product}
+          icon="box"
           trend="On Track"
           trendColor="emerald"
           iconOnlyTrend
         />
-        <StatsCard
-          title="Distance Today"
-          value="68 km"
-          icon="directions_car"
-          trend="Peak zone active"
-          trendColor="amber"
-          warning
-        />
       </div>
 
-      {/* Urgent Requests */}
-      <div className="mt-6 px-4 lg:px-6">
+      {/* Livraisons Acceptées */}
+      <div className="mt-8 px-4 lg:px-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight">
-            Urgent Requests
+            Livraisons
           </h3>
-          <button className="text-rouge-vif text-sm font-bold uppercase tracking-wider hover:underline">
-            View all
-          </button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => window.location.reload()}
+            disabled={deliveriesLoading}
+          >
+            Actualiser
+          </Button>
         </div>
 
-        <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 hide-scrollbar">
-          <UrgentRequestCard
-            imageUrl="https://lh3.googleusercontent.com/..."
-            price="$25.00"
-            title="Downtown Express Delivery"
-            distance="2.4 km"
-            time="Pickup in 5 mins"
-          />
-          <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&auto=format&fit=crop&q=80"
-            price="$17.80"
-            title="Birthday Cupcakes – Same Hour Surprise"
-            distance="4.4 km"
-            time="Pickup in 12 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829545856-d10d5c6a19a0?w=800&auto=format&fit=crop&q=80"
-            price="$35.00"
-            title="Court Documents – Filing Deadline Today"
-            distance="5.7 km"
-            time="Pickup in 6 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1589829295980-85e0c1b9d8d5?w=800&auto=format&fit=crop&q=80"
-            price="$42.25"
-            title="Legal Contracts – Attorney to Client Rush"
-            distance="2.8 km"
-            time="Pickup now"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1581235720704-06d1018152dc?w=800&auto=format&fit=crop&q=80"
-            price="$31.40"
-            title="iPhone Repair Parts – Urgent Technician Need"
-            distance="6.2 km"
-            time="Pickup in 10 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1526045478516-99145907023c?w=800&auto=format&fit=crop&q=80"
-            price="$48.00"
-            title="Mother's Day Rose Bouquet – Last Minute"
-            distance="3.5 km"
-            time="Pickup in 9 mins"
-            />
-
-            <UrgentRequestCard
-            imageUrl="https://images.unsplash.com/photo-1581092160560-1c1e428e9d65?w=800&auto=format&fit=crop&q=80"
-            price="$55.75"
-            title="Car Battery Replacement – Roadside Urgent"
-            distance="7.1 km"
-            time="Pickup in 15 mins"
-            />
-        </div>
-      </div>
-
-      <PremiumGuide />
-
-      <div className="mt-8 px-4 lg:px-6">
-        <h3 className="text-bleu-fonce text-lg lg:text-xl font-bold uppercase tracking-tight mb-4">
-          Platform Updates
-        </h3>
-        <div className="flex flex-col gap-4">
-          <PlatformUpdateItem
-            icon="verified_user"
-            title="Enhanced Safety Policy – 2026"
-            description="New medical coverage extended + free protective gear for night shifts."
-          />
-          <PlatformUpdateItem
-            icon="ev_station"
-            title="EV Transition Bonus"
-            description="Switch to electric and get 18% bonus on all city routes until June 2026."
-          />
+        <div className="rounded-xl border bg-card">
+          {deliveriesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : acceptedDeliveries.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              Aucune livraison acceptée pour le moment.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Produit</TableHead>
+                  <TableHead>Adresse de Ramassage</TableHead>
+                  <TableHead>Adresse de Livraison</TableHead>
+                  <TableHead>Distance</TableHead>
+                  <TableHead>Prix</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {acceptedDeliveries.map((delivery) => (
+                  <TableRow key={delivery.id}>
+                    <TableCell className="font-medium">
+                      #{delivery.id.toString().padStart(4, "0")}
+                    </TableCell>
+                    <TableCell>
+                      {delivery.client?.nom || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {/* {delivery.product?.name || delivery.productName || "—"} */} Static
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {delivery.pickupAddress || "—"}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {delivery.dropAddress || "—"}
+                    </TableCell>
+                    <TableCell>
+                      {delivery.distanceKm ? `${delivery.distanceKm} km` : "—"}
+                    </TableCell>
+                    <TableCell className="font-semibold text-primary">
+                      {delivery.price ? `${delivery.price.toFixed(2)} €` : "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" asChild>
+                        <a href={`/dashboard/tasks/${delivery.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </div>
     </>

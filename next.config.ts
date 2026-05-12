@@ -21,8 +21,11 @@ const nextConfig = {
               script-src 'self' 'unsafe-inline' 'unsafe-eval';
               style-src 'self' 'unsafe-inline';
               img-src 'self' data: https:;
-
-              font-src 'self' https: data:;
+              font-src 
+                'self' 
+                https://fonts.gstatic.com
+                https:
+                data:;
             `.replace(/\s+/g, ' ').trim()
           },
         ]

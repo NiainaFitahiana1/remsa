@@ -69,6 +69,7 @@ export function useDeliveries() {
     loading,
     error,
     loadDeliveries,
+    count: deliveries.length,
     updateDeliveryStatus,
   };
 }

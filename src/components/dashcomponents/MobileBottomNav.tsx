@@ -7,10 +7,9 @@ import { useCurrentUser } from '@/lib/auth/use-current-user';
 const menuLinks = {
   CLIENT: [
     { href: '/dashboard', icon: 'home', label: 'Home' },
-    { href: '/dashboard/product', icon: 'inventory_2', label: 'Products' },
-    { href: '/dashboard/tasks', icon: 'explore', label: 'Tasks' },
-    { href: '/dashboard/stats', icon: 'analytics', label: 'Stats' },
-    { href: '/dashboard/account', icon: 'person', label: 'Account' },
+    { href: '/dashboard/product', icon: 'inventory_2', label: 'Produits' },
+    { href: '/dashboard/tasks', icon: 'explore', label: 'Livraisons' },
+    { href: '/dashboard/account', icon: 'person', label: 'Compte' },
   ],
   ADMIN: [
     { href: '/admin', icon: 'dashboard', label: 'Home' },

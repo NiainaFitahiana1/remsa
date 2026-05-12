@@ -34,9 +34,8 @@ export function DeliveryCard({
   const shortPickup = delivery.pickupAddress?.split(",")[0]?.trim() || "Départ inconnu";
   const shortDrop = delivery.dropAddress?.split(",")[0]?.trim() || "Destination inconnue";
 
-  // Récupération des tokens via l'API NestJS
   const fetchTokens = async () => {
-    if (tokens.length > 0) return; // Évite de recharger si déjà présent
+    if (tokens.length > 0) return; 
     setIsLoading(true);
     try {
       const response = await fetch(`/api/deliveries/${delivery.id}/tokens`);

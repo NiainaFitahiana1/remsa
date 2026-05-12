@@ -1,4 +1,18 @@
-export type Role = "ADMIN" | "CLIENT";
+export type UserProfile = {
+  id: string;
+  nom: string;
+  prenom: string;
+  role: string;
+  verified: boolean;
+};
+
+export type MenuLink = {
+  href: string;
+  icon: string;
+  label: string;
+};
+
+export type Role = 'CLIENT' | 'ADMIN' | 'SUPER_ADMIN' | 'DRIVER';
 
 export interface User {
   id: number;

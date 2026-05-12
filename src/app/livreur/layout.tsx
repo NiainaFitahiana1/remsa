@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         >
           <Bell className="h-4 w-4" />
           <span className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white ring-2 ring-white">
-            3
+            1
           </span>
         </button>
 
