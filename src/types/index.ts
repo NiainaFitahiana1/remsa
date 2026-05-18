@@ -142,3 +142,18 @@ export interface DeliveryOffer {
     quantity: number;
   }>;
 }
+export interface GeoapifyProperties {
+  formatted: string;
+  lat: number;
+  lon: number;
+  city?: string;
+  county?: string;
+}
+
+export interface GeoapifyFeature {
+  properties: GeoapifyProperties;
+}
+
+export interface GeoapifyResponse {
+  features: GeoapifyFeature[];
+}

@@ -7,7 +7,7 @@ import logo from '@/../public/logos/logo-text.png';
 import { Eye, EyeOff } from 'lucide-react';
 import { useRegister } from '@/hooks/useRegister';
 import type { RegisterFormData } from '@/types';
-
+import ZoneAutocomplete from '../../ZoneAutocomplete';
 export const RegisterForm = () => {
   const router = useRouter();
   const { register, isLoading, error } = useRegister();
@@ -252,9 +252,8 @@ export const RegisterForm = () => {
               className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
             >
               <option value="">Non précisé</option>
-              <option value="HOMME">Homme</option>
-              <option value="FEMME">Femme</option>
-              <option value="AUTRE">Autre</option>
+              <option value="M">Homme</option>
+              <option value="F">Femme</option>
             </select>
           </div>
 
@@ -304,20 +303,11 @@ export const RegisterForm = () => {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
-                  Zone d'opération
-                </label>
-                <input
-                  name="zone"
-                  value={formData.zone || ''}
-                  onChange={handleChange}
-                  placeholder="ex: Antananarivo Centre..."
-                  required
-                  disabled={isLoading}
-                  className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
-                />
-              </div>
+             <ZoneAutocomplete<RegisterFormData>
+                formData={formData}
+                setFormData={setFormData}
+                isLoading={isLoading}
+              />
             </div>
           )}
 

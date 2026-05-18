@@ -5,7 +5,7 @@ import { useUserRole } from "@/hooks/deliveries/useUserRole";
 import { useDeliveryDragDrop } from "@/hooks/deliveries/useDeliveryDragDrop";
 import { STATUSES, STATUS_CONFIG } from "@/constants/status";
 import DeliveryColumn from "@/components/dashcomponents/deliveries/kanban/DeliveryColumn";
-import DeliveryCreateDialog from "@/components/dashcomponents/deliveries/kanban/DeliveryCreateDialog";
+import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ErrorMessage from "@/components/ErrorMessage";
 import { Button } from "@/components/ui/button";
@@ -35,17 +35,15 @@ export default function DeliveriesKanban() {
             </p>
           </div>
 
-          {isClient ? (
-            <DeliveryCreateDialog onCreated={loadDeliveries} />
-          ) : (
+         
             <Button
               variant="outline"
               disabled
               title="Seuls les clients peuvent créer une livraison"
-            >
-              + Nouvelle livraison
+              asChild
+            > 
+              <Link href="/dashboard/product"> + Nouvelle livraison</Link>
             </Button>
-          )}
         </div>
 
         <div className="overflow-x-auto pb-6">

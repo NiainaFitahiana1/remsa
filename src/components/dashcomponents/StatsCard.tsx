@@ -1,7 +1,7 @@
 interface StatsCardProps {
   title: string;
   value: string | number;
-  icon: string;
+  icon: string ;
   trend: string;
   trendColor: "emerald" | "amber";
   iconOnlyTrend?: boolean;
