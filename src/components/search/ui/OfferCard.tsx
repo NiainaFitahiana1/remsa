@@ -172,7 +172,7 @@ export default function OfferCard({ offer }: { offer: DeliveryOffer }) {
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full py-3 rounded-md bg-surface-container-highest font-headline font-bold text-[10px] tracking-widest uppercase group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-secondary-container group-hover:text-white transition-all">
+            <Button className="w-full py-3 rounded-md bg-surface-container-highest font-headline font-bold text-[10px] tracking-widest text-neutral-800 uppercase group-hover:bg-gradient-to-r group-hover:from-primary group-hover:to-secondary-container group-hover:text-white transition-all">
               Voir les détails
             </Button>
           </DialogTrigger>

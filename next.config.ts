@@ -14,6 +14,7 @@ const nextConfig = {
               default-src 'self';
               connect-src 'self' 
                 https://api.geoapify.com 
+                https://apilayer.net  
                 http://localhost:5000 
                 https://*.vercel.app 
                 ws://localhost:5000 

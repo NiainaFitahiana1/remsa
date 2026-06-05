@@ -8,6 +8,9 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useRegister } from '@/hooks/useRegister';
 import type { RegisterFormData } from '@/types';
 import ZoneAutocomplete from '../../ZoneAutocomplete';
+import { usePhoneValidation } from '@/hooks/useZapierverify'; // ← Correction importante
+import PhoneInput from './PhoneInput';
+
 export const RegisterForm = () => {
   const router = useRouter();
   const { register, isLoading, error } = useRegister();
@@ -52,6 +55,9 @@ export const RegisterForm = () => {
     ? `@${formData.roleId === 2 ? 'liv' : 'client'}#..._${formData.nom.trim().toLowerCase().replace(/\s+/g, '_')}`
     : 'En attente du nom...';
 
+  // Hook de validation téléphone
+  const { validatePhone, isValidating, validationError, clearError } = usePhoneValidation();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setErrorTemp(null);
@@ -61,7 +67,19 @@ export const RegisterForm = () => {
     }));
   };
 
-  const handleNext = (e: React.FormEvent) => {
+  const onPhoneChange = async (value: string) => {
+    setErrorTemp(null);
+    clearError();
+
+    setFormData((prev) => ({ ...prev, telephone: value }));
+
+    // Validation API (après un minimum de caractères)
+    if (value.length > 12) {
+      await validatePhone(value);
+    }
+  };
+
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!formData.prenom.trim()) return setErrorTemp('Le prénom est requis');
@@ -69,6 +87,12 @@ export const RegisterForm = () => {
     if (!formData.email?.trim()) return setErrorTemp('L’email est requis');
     if (emailError) return setErrorTemp('Veuillez corriger l’email');
     if (!formData.telephone.trim()) return setErrorTemp('Le téléphone est requis');
+
+    // Validation finale du téléphone avec NumVerify avant de passer à l'étape 2
+    const phoneResult = await validatePhone(formData.telephone);
+    if (!phoneResult.success) {
+      return setErrorTemp(phoneResult.error || 'Numéro de téléphone invalide');
+    }
 
     setStep(2);
   };
@@ -103,13 +127,10 @@ export const RegisterForm = () => {
         />
       </div>
 
-      {/* Titre selon l'étape */}
       <div className="relative mb-8">
         <hr className="border-gray-100 w-full" />
         <p className="text-sm text-gray-500 mt-4 ml-1">
-          {step === 1 
-            ? "Créons votre compte" 
-            : "Finalisez votre inscription"}
+          {step === 1 ? "Créons votre compte" : "Finalisez votre inscription"}
         </p>
       </div>
 
@@ -166,20 +187,13 @@ export const RegisterForm = () => {
             {emailError && <p className="mt-1 ml-1 text-xs text-red-600">{emailError}</p>}
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
-              Téléphone
-            </label>
-            <input
-              name="telephone"
-              value={formData.telephone}
-              onChange={handleChange}
-              placeholder="+261 34 12 345 67"
-              required
-              disabled={isLoading}
-              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
-            />
-          </div>
+          {/* Téléphone avec validation API */}
+          <PhoneInput
+            value={formData.telephone}
+            onChange={onPhoneChange}
+            error={validationError || undefined}
+            isValidating={isValidating}
+          />
 
           {errorTemp && (
             <div className="rounded-xl bg-red-50 p-3 text-sm text-red-700 border border-red-200">
@@ -198,7 +212,7 @@ export const RegisterForm = () => {
       ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Identifiant */}
-          <div>
+          <div className="hidden">
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
               Identifiant unique (Attribué)
             </label>
@@ -210,7 +224,7 @@ export const RegisterForm = () => {
             />
           </div>
 
-          {/* Mot de passe avec toggle */}
+          {/* Mot de passe */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 ml-1">
               Mot de passe
@@ -219,7 +233,7 @@ export const RegisterForm = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="password"
-                value={formData.password ?? ""}
+                value={formData.password ?? ''}
                 onChange={handleChange}
                 placeholder="••••••••"
                 required
@@ -281,7 +295,7 @@ export const RegisterForm = () => {
             </select>
           </div>
 
-          {/* Champs spécifiques chauffeur */}
+          {/* Champs chauffeur */}
           {isChauffeur && (
             <div className="space-y-5">
               <div>
@@ -303,7 +317,7 @@ export const RegisterForm = () => {
                 </select>
               </div>
 
-             <ZoneAutocomplete<RegisterFormData>
+              <ZoneAutocomplete<RegisterFormData>
                 formData={formData}
                 setFormData={setFormData}
                 isLoading={isLoading}
@@ -341,7 +355,6 @@ export const RegisterForm = () => {
         </form>
       )}
 
-      {/* Lien vers connexion */}
       <div className="text-center pt-4">
         <p className="text-sm text-gray-500">
           Déjà un compte ?{' '}
