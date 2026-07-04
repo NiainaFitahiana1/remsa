@@ -22,7 +22,6 @@ const countries: Country[] = [
   { code: 'CH', name: 'Suisse', dialCode: '+41', flag: '🇨🇭' },
   { code: 'MA', name: 'Maroc', dialCode: '+212', flag: '🇲🇦' },
   { code: 'TN', name: 'Tunisie', dialCode: '+216', flag: '🇹🇳' },
-  // Ajoute d'autres pays ici ou importe une liste complète
 ];
 
 interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
@@ -34,6 +33,22 @@ interface PhoneInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElemen
   isValidating?: boolean;
   defaultCountryCode?: string;
 }
+
+// Fonction pour formater le numéro avec espaces
+const formatPhoneNumber = (dialCode: string, number: string): string => {
+  const cleanNumber = number.replace(/\s+/g, '').replace(/^0+/, ''); // supprime espaces et 0 initial
+
+  // Madagascar : 9 chiffres → 33 61 428 48 (ou 34, 32, etc.)
+  if (dialCode === '+261') {
+    if (cleanNumber.length <= 2) return cleanNumber;
+    if (cleanNumber.length <= 4) return `${cleanNumber.slice(0, 2)} ${cleanNumber.slice(2)}`;
+    if (cleanNumber.length <= 7) return `${cleanNumber.slice(0, 2)} ${cleanNumber.slice(2, 4)} ${cleanNumber.slice(4)}`;
+    return `${cleanNumber.slice(0, 2)} ${cleanNumber.slice(2, 4)} ${cleanNumber.slice(4, 7)} ${cleanNumber.slice(7)}`;
+  }
+
+  // Format par défaut (groupes de 2 ou 3)
+  return cleanNumber.replace(/(\d{2,3})(?=\d)/g, '$1 ').trim();
+};
 
 const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
   ({ 
@@ -52,23 +67,24 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
       countries.find(c => c.dialCode === defaultCountryCode) || countries[0]
     );
 
-    // Sépare le code pays du reste du numéro
+    // Extraire uniquement la partie numéro
     const phoneNumberWithoutCode = value.replace(selectedCountry.dialCode, '').trim();
 
     const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
       const newCountry = countries.find(c => c.dialCode === e.target.value) || countries[0];
       setSelectedCountry(newCountry);
 
-      // Met à jour le numéro complet avec le nouveau code
-      const newFullNumber = newCountry.dialCode + ' ' + phoneNumberWithoutCode;
-      onChange?.(newFullNumber);
+      const formatted = formatPhoneNumber(newCountry.dialCode, phoneNumberWithoutCode);
+      onChange?.(newCountry.dialCode + (formatted ? ' ' + formatted : ''));
     };
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const input = e.target.value.replace(selectedCountry.dialCode, '').trim();
-      const newFullNumber = selectedCountry.dialCode + ' ' + input;
+      const input = e.target.value;
+      const formatted = formatPhoneNumber(selectedCountry.dialCode, input);
+      const newFullNumber = selectedCountry.dialCode + (formatted ? ' ' + formatted : '');
+      
       onChange?.(newFullNumber);
-      register?.onChange(e);
+      register?.onChange?.(e);
     };
 
     return (
@@ -77,40 +93,46 @@ const PhoneInput = forwardRef<HTMLInputElement, PhoneInputProps>(
           {label}
         </label>
         
-        <div className="flex gap-2">
-          {/* Sélecteur de pays */}
-          <div className="w-48">
+        {/* Un seul cadre visuel */}
+        <div className={cn(
+          "flex border border-gray-200 rounded-xl overflow-hidden focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all",
+          error && "border-red-500"
+        )}>
+          {/* Sélecteur pays (seulement le drapeau) */}
+          <div className="flex items-center bg-gray-50 border-r border-gray-200 px-4">
             <select
               value={selectedCountry.dialCode}
               onChange={handleCountryChange}
               disabled={isValidating}
-              className="appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm"
+              className="appearance-none bg-transparent text-2xl focus:outline-none cursor-pointer pr-2"
             >
               {countries.map((country) => (
                 <option key={country.code} value={country.dialCode}>
-                  {country.flag} {country.dialCode} {country.name}
+                  {country.flag}
                 </option>
               ))}
             </select>
+            <span className="text-gray-400 text-sm font-medium ml-1">
+              {selectedCountry.dialCode}
+            </span>
           </div>
 
-          {/* Champ numéro de téléphone */}
+          {/* Champ numéro */}
           <div className="flex-1 relative">
             <input
               type="tel"
               ref={ref}
-              value={value}
+              value={phoneNumberWithoutCode ? formatPhoneNumber(selectedCountry.dialCode, phoneNumberWithoutCode) : ''}
               onChange={handlePhoneChange}
-              placeholder={`${selectedCountry.dialCode} XX XXX XXX`}
+              placeholder="33 61 428 48"
               className={cn(
-                "appearance-none rounded-xl block w-full px-4 py-3.5 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all sm:text-sm",
-                error && "border-red-500 focus:border-red-500 focus:ring-red-500/20",
+                "block w-full px-4 py-3.5 bg-transparent text-gray-900 focus:outline-none sm:text-sm",
                 className
               )}
               disabled={isValidating}
-              {...register}
               {...props}
             />
+            
             {isValidating && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2">
                 <div className="animate-spin h-4 w-4 border-2 border-red-500 border-t-transparent rounded-full" />

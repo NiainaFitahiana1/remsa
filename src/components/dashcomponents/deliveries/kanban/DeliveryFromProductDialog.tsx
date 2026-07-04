@@ -258,9 +258,9 @@ export default function DeliveryFromProductDialog({
         throw new Error(errorText || "Erreur lors de la création de la livraison");
       }
 
-      toast.success(
-        `Livraison créée avec succès pour ${itemsToDeliver.length} produit${itemsToDeliver.length > 1 ? "s" : ""} !`
-      );
+      // toast.success(
+      //   `Livraison créée avec succès pour ${itemsToDeliver.length} produit${itemsToDeliver.length > 1 ? "s" : ""} !`
+      // );
 
       // Reset du formulaire
       setForm({ pickupAddress: "", dropAddress: "", distanceKm: "", price: "" });

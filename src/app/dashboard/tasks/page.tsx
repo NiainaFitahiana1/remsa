@@ -1,11 +1,11 @@
-"use client";
-
-import DeliveriesKanban from "@/components/dashcomponents/deliveries/kanban/DeliveriesKanban";
-
-const Page = () => {
+import React from 'react'
+import Greeting from '@/components/dashcomponents/Greeting';
+export default function page() {
   return (
-    <DeliveriesKanban/>
-  );
+    <>
+        <div className="p-4 lg:p-6">
+        <Greeting />
+        </div>
+    </>
+  )
 }
-
-export default Page;

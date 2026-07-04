@@ -65,10 +65,10 @@ export default function ProductListClient({
       const data = await res.json();
       setProducts(data);
       setSelectedProducts([]);
-      toast.success("Liste actualisée avec succès");
+      // toast.success("Liste actualisée avec succès");
     } catch (err: any) {
       setError(err.message || "Impossible d'actualiser");
-      toast.error("Erreur lors de l'actualisation");
+      // toast.error("Erreur lors de l'actualisation");
     } finally {
       setIsRefetching(false);
     }
